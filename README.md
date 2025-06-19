@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # 🌸 Hoashop - Website Bán Hoa Tươi Online
 
 ## 📋 Tổng Quan Dự Án
@@ -368,3 +369,7 @@ Dự án này được cấp phép theo MIT License - xem file [LICENSE](LICENSE
 **Ngày cập nhật:** $(date)  
 **Phiên bản:** 1.0.0  
 **Trạng thái:** Đang phát triển 
+=======
+# phamvt
+viet
+>>>>>>> ba2aa91edc6d6aeca7a92adc2a10d2e68da53bec

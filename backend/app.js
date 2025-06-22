@@ -34,6 +34,7 @@ app.use('/api/reviews', reviewRoutes);
 
 // Khởi động server và kết nối DB
 const PORT = process.env.PORT || 5000;
+console.log('ENV:', process.env.DB_USER, process.env.DB_PASSWORD, process.env.DB_NAME, process.env.DB_HOST, process.env.DB_PORT);
 app.listen(PORT, async () => {
   try {
     await sequelize.authenticate();

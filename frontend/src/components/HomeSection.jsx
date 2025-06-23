@@ -1,17 +1,27 @@
-import React from 'react';
-import { Typography, Box } from '@mui/material';
-import ProductList from './ProductList';
+import React from "react";
+import styles from "./HomeSection.module.scss";
 
-// HomeSection: Hiển thị 1 block sản phẩm với tiêu đề và danh sách sản phẩm
-const HomeSection = ({ title, products, onViewDetail }) => {
-  if (!products || products.length === 0) return null;
+const HomeSection = ({ title, subtitle, children, onViewMore }) => {
   return (
-    <Box mb={5}>
-      <Typography variant="h5" mb={2} fontWeight={600} color="primary.main">
-        {title}
-      </Typography>
-      <ProductList products={products} onViewDetail={onViewDetail} />
-    </Box>
+    <section className={styles.homeSection}>
+      <div className={styles.header}>
+        <div className={styles.titleContainer}>
+          <h2 className={styles.title}>{title}</h2>
+          {subtitle && <p className={styles.subtitle}>{subtitle}</p>}
+        </div>
+        {onViewMore && (
+          <button 
+            className={styles.viewMoreBtn}
+            onClick={onViewMore}
+          >
+            Xem thêm →
+          </button>
+        )}
+      </div>
+      <div className={styles.content}>
+        {children}
+      </div>
+    </section>
   );
 };
 

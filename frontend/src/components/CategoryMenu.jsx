@@ -1,9 +1,9 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
-import styles from './CategoryMenu.module.css';
+import styles from './CategoryMenu.module.scss';
 
-const CategoryMenu = () => {
+const CategoryMenu = ({ isScrolled }) => {
   const [categories, setCategories] = useState([]);
   const [open, setOpen] = useState(false); // mobile menu
   const [openSub, setOpenSub] = useState(null); // subMenu accordion
@@ -24,8 +24,14 @@ const CategoryMenu = () => {
 
   useEffect(() => {
     const fetchCategories = async () => {
-      const res = await api.get('/categories');
-      setCategories(res.data);
+      try {
+        const res = await api.get('/categories');
+        // Fix: API trả về { success: true, data: categories, message: "..." }
+        setCategories(res.data?.data || []);
+      } catch (error) {
+        console.error('Error fetching categories:', error);
+        setCategories([]);
+      }
     };
     fetchCategories();
   }, []);
@@ -64,7 +70,7 @@ const CategoryMenu = () => {
   );
 
   return (
-    <nav className={styles.menuWrap}>
+    <nav className={`${styles.menuWrap} ${isScrolled ? styles.scrolled : ''}`}>
       {/* Hamburger chỉ hiện trên mobile */}
       <div className={styles.hamburgerOnly}>{Hamburger}</div>
       {/* Overlay tối khi mở menu mobile */}
@@ -108,31 +114,33 @@ const CategoryMenu = () => {
         </ul>
       </div>
       {/* PC/tablet giữ nguyên menuList */}
-      <ul className={styles.menuList}>
-        {categories.map((cat) => (
-          <li className={styles.menuItem} key={cat.id_DanhMuc}>
-            <span
-              className={styles.menuBtn}
-              onClick={() => handleCatClick(cat)}
-            >
-              {cat.tenDanhMuc}
-            </span>
-            {cat.SubCategories && cat.SubCategories.length > 0 && (
-              <ul className={styles.subMenu}>
-                {cat.SubCategories.map((sub) => (
-                  <li
-                    className={styles.subMenuItem}
-                    key={sub.id_DanhMucChiTiet}
-                    onClick={() => handleSubClick(sub)}
-                  >
-                    {sub.tenDanhMucChiTiet}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </li>
-        ))}
-      </ul>
+      <div className={styles.menuContainer}>
+        <ul className={styles.menuList}>
+          {categories.map((cat) => (
+            <li className={styles.menuItem} key={cat.id_DanhMuc}>
+              <span
+                className={styles.menuBtn}
+                onClick={() => handleCatClick(cat)}
+              >
+                {cat.tenDanhMuc}
+              </span>
+              {cat.SubCategories && cat.SubCategories.length > 0 && (
+                <ul className={styles.subMenu}>
+                  {cat.SubCategories.map((sub) => (
+                    <li
+                      className={styles.subMenuItem}
+                      key={sub.id_DanhMucChiTiet}
+                      onClick={() => handleSubClick(sub)}
+                    >
+                      {sub.tenDanhMucChiTiet}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </li>
+          ))}
+        </ul>
+      </div>
     </nav>
   );
 };

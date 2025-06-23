@@ -1,18 +1,18 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { Box, Typography, IconButton, InputBase, Badge } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import ShoppingBagIcon from '@mui/icons-material/ShoppingBag';
-import AccountCircleIcon from '@mui/icons-material/AccountCircle';
+import PersonOutline from '@mui/icons-material/PersonOutline';
 import PaymentIcon from '@mui/icons-material/Payment';
-import styles from './Header.module.css';
-import CategoryMenu from './CategoryMenu';
+import styles from './Header.module.scss';
 
-const Header = () => {
+const Header = ({ isScrolled }) => {
   const [openAccount, setOpenAccount] = useState(false);
   const accountRef = useRef(null);
 
   // Đóng dropdown khi click ra ngoài
-  React.useEffect(() => {
+  useEffect(() => {
     const handleClick = (e) => {
       if (accountRef.current && !accountRef.current.contains(e.target)) {
         setOpenAccount(false);
@@ -23,82 +23,99 @@ const Header = () => {
   }, [openAccount]);
 
   return (
-    <header className={styles.headerWrap}>
-      {/* Dòng trên cùng: hotline + tài khoản/giỏ hàng/thanh toán */}
-      <Box className={styles.topBar}>
-        <Typography className={styles.hotline} align="center">
-          HOTLINE: 1900 633 045 | 0865 160 360
-        </Typography>
-        <Box className={styles.accountBarTop}>
-          <Box ref={accountRef} style={{ position: 'relative' }}>
-            <IconButton size="small" className={styles.accountBtnTop} onClick={() => setOpenAccount(v => !v)}>
-              <AccountCircleIcon fontSize="small" />
-              <span className={styles.accountTextTop}>Tài khoản</span>
-            </IconButton>
-            {openAccount && (
-              <Box style={{
-                position: 'absolute',
-                top: '110%',
-                left: 0,
-                minWidth: 200,
-                background: '#fff',
-                borderRadius: 8,
-                boxShadow: '0 2px 12px rgba(0,0,0,0.12)',
-                padding: '18px 24px',
-                zIndex: 9999,
-                border: '1px solid #eee',
-              }}>
-                <Box style={{ padding: '6px 0', cursor: 'pointer', fontSize: 17, color: '#222', borderBottom: '1px solid #f0f0f0' }} onClick={() => window.location.href='/register'}>Đăng ký</Box>
-                <Box style={{ padding: '6px 0', cursor: 'pointer', fontSize: 17, color: '#222' }} onClick={() => window.location.href='/login'}>Đăng nhập</Box>
-              </Box>
-            )}
-          </Box>
-          <IconButton size="small" className={styles.cartBtnTop}>
-            <ShoppingBagIcon fontSize="small" />
-            <span className={styles.accountTextTop}>Giỏ hàng</span>
-          </IconButton>
-          <IconButton size="small" className={styles.paymentBtnTop}>
-            <PaymentIcon fontSize="small" />
-            <span className={styles.accountTextTop}>Thanh toán</span>
-          </IconButton>
-        </Box>
-      </Box>
-      {/* Dòng giữa: social - logo - search/cart */}
-      <Box className={styles.midBar}>
-        <Box className={styles.socialsMid}>
-          <a href="#" target="_blank" rel="noopener" aria-label="Facebook">
-            <img src="/facebook.svg" alt="fb" className={styles.socialIcon} />
-          </a>
-          <a href="#" target="_blank" rel="noopener" aria-label="Twitter">
-            <img src="/twitter.svg" alt="tw" className={styles.socialIcon} />
-          </a>
-          <a href="#" target="_blank" rel="noopener" aria-label="Instagram">
-            <img src="/instagram.svg" alt="ig" className={styles.socialIcon} />
-          </a>
-        </Box>
-        <Box className={styles.logoWrapMid}>
-          <img src="/logo-hoashop.png" alt="Hoashop" className={styles.logoImg} />
-          <Typography className={styles.logoText}>
-            
-            <span className={styles.logoSlogan}></span>
+    <header className={`${styles.headerWrap} ${isScrolled ? styles.scrolled : ''}`}>
+      <div className={styles.topBar}>
+        <div className={styles.container}>
+          {/* Hotline */}
+          <Typography className={styles.hotline}>
+            📞 HOTLINE: 1900 633 045 | 0865 160 360
           </Typography>
-        </Box>
-        <Box className={styles.rightBar}>
-          <Box className={styles.searchCartWrap}>
-            <Box className={styles.searchWrap}>
-              <InputBase className={styles.searchInput} placeholder="Tìm kiếm"  />
-              <IconButton className={styles.searchBtn}><SearchIcon /></IconButton>
+          
+          {/* Account Actions */}
+          <Box className={styles.accountBarTop}>
+            <Box ref={accountRef} style={{ position: 'relative' }}>
+              <IconButton 
+                size="small" 
+                className={styles.accountBtnTop} 
+                onClick={() => setOpenAccount(v => !v)} 
+                disableRipple
+              >
+                <PersonOutline fontSize="small" />
+                <span className={styles.accountTextTop}>Tài khoản</span>
+              </IconButton>
+              {openAccount && (
+                <Box className={styles.accountDropdown}>
+                  <Box 
+                    className={styles.dropdownItem} 
+                    onClick={() => window.location.href='/register'}
+                  >
+                    📝 Đăng ký
+                  </Box>
+                  <Box 
+                    className={styles.dropdownItem} 
+                    onClick={() => window.location.href='/login'}
+                  >
+                    🔑 Đăng nhập
+                  </Box>
+                </Box>
+              )}
             </Box>
-            <IconButton size="large" className={styles.cartBtn}>
-              <Badge badgeContent={0} color="secondary">
-                <ShoppingBagIcon fontSize="large" />
-              </Badge>
+            <IconButton size="small" className={styles.cartBtnTop}>
+              <ShoppingBagIcon fontSize="small" />
+              <span className={styles.accountTextTop}>Giỏ hàng</span>
+            </IconButton>
+            <IconButton size="small" className={styles.paymentBtnTop}>
+              <PaymentIcon fontSize="small" />
+              <span className={styles.accountTextTop}>Thanh toán</span>
             </IconButton>
           </Box>
-        </Box>
-      </Box>
-      {/* Dòng dưới: menu ngang động */}
-      <CategoryMenu />
+        </div>
+      </div>
+
+      <div className={styles.midBar}>
+        <div className={styles.container}>
+          {/* Social Icons */}
+          <Box className={styles.socialsMid}>
+            <a href="https://facebook.com" target="_blank" rel="noopener" aria-label="Facebook">
+              <img src="/facebook.svg" alt="Facebook" className={styles.socialIcon} />
+            </a>
+            <a href="https://twitter.com" target="_blank" rel="noopener" aria-label="Twitter">
+              <img src="/twitter.svg" alt="Twitter" className={styles.socialIcon} />
+            </a>
+            <a href="https://instagram.com" target="_blank" rel="noopener" aria-label="Instagram">
+              <img src="/instagram.svg" alt="Instagram" className={styles.socialIcon} />
+            </a>
+          </Box>
+          
+          {/* Logo */}
+          <Box className={styles.logoWrapMid}>
+            <Link to="/">
+              <img src="/logo-hoashop.png" alt="Hoashop - Shop Hoa Tươi" className={styles.logoImg} />
+            </Link>
+          </Box>
+          
+          {/* Search & Cart */}
+          <Box className={styles.rightBar}>
+            <Box className={styles.searchCartWrap}>
+              <Box className={styles.searchWrap}>
+                <InputBase
+                  className={styles.searchInput}
+                  placeholder="Tìm kiếm hoa tươi..."
+                  fullWidth
+                />
+                <IconButton className={styles.searchBtn} aria-label="Tìm kiếm">
+                  <SearchIcon />
+                </IconButton>
+              </Box>
+              <IconButton size="large" className={styles.cartBtn} aria-label="Giỏ hàng">
+                <Badge badgeContent={0} color="error">
+                  <ShoppingBagIcon fontSize="large" />
+                </Badge>
+              </IconButton>
+            </Box>
+          </Box>
+        </div>
+      </div>
     </header>
   );
 };

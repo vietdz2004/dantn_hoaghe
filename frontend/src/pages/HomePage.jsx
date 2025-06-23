@@ -1,94 +1,217 @@
-import React, { useEffect, useState } from 'react';
-import { Box, Typography, Card, CardContent, Button, CircularProgress } from '@mui/material';
-import api from '../services/api';
-import HomeSection from '../components/HomeSection';
-import styles from './HomePage.module.css';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import styles from './HomePage.module.scss';
 import BannerSlider from '../components/BannerSlider';
+import CategoryMenu from '../components/CategoryMenu';
+import HomeSection from '../components/HomeSection';
+import ProductList from '../components/ProductList';
+import { categoriesAPI, productsAPI } from '../services/api';
 
-// HomePage: Trang chủ tổng quan của Hoashop
 const HomePage = () => {
+  const navigate = useNavigate();
   const [categories, setCategories] = useState([]);
-  const [productsNew, setProductsNew] = useState([]);
-  const [productsDiscount, setProductsDiscount] = useState([]);
-  const [productsBySubCategory, setProductsBySubCategory] = useState({});
+  const [discountProducts, setDiscountProducts] = useState([]);
+  const [popularProducts, setPopularProducts] = useState([]);
+  const [newProducts, setNewProducts] = useState([]);
+  const [bestsellerProducts, setBestsellerProducts] = useState([]);
+  const [categoryProductSections, setCategoryProductSections] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const navigate = useNavigate();
 
+  // Fetch all data from server-side APIs
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Lấy danh mục cha và con
-        const catRes = await api.get('/categories');
-        setCategories(catRes.data);
-        // Lấy tất cả sản phẩm
-        const prodRes = await api.get('/products');
-        const allProducts = prodRes.data;
-        // Sản phẩm mới nhất
-        setProductsNew([...allProducts].slice(-6).reverse());
-        // Sản phẩm khuyến mãi
-        setProductsDiscount(allProducts.filter(p => p.giaKhuyenMai && p.giaKhuyenMai < p.gia).slice(0, 6));
-        // Sản phẩm theo từng danh mục chi tiết (subCategory)
-        const bySubCat = {};
-        catRes.data.forEach(cat => {
-          if (cat.SubCategories && cat.SubCategories.length > 0) {
-            cat.SubCategories.forEach(sub => {
-              bySubCat[sub.tenDanhMucChiTiet] = allProducts.filter(p => p.id_DanhMucChiTiet === sub.id_DanhMucChiTiet).slice(0, 6);
-            });
-          }
+        setLoading(true);
+        setError(null);
+        console.log('🔄 Fetching homepage data...');
+
+        // Parallel API calls for optimal performance
+        const [
+          categoriesResponse,
+          discountResponse, 
+          popularResponse,
+          newResponse,
+          bestsellerResponse,
+          categoryProductsResponse
+        ] = await Promise.all([
+          categoriesAPI.getAll().catch(e => ({ data: [], error: e })),
+          productsAPI.getDiscountProducts({ limit: 8 }).catch(e => ({ data: { data: [] }, error: e })),
+          productsAPI.getPopularProducts({ limit: 8 }).catch(e => ({ data: { data: [] }, error: e })),
+          productsAPI.getNewProducts({ limit: 8 }).catch(e => ({ data: { data: [] }, error: e })),
+          productsAPI.getBestsellerProducts({ limit: 8 }).catch(e => ({ data: { data: [] }, error: e })),
+          productsAPI.getProductsByCategories({ limit: 6, shuffle: true }).catch(e => ({ data: { data: [] }, error: e }))
+        ]);
+
+        console.log('📊 API Responses loaded successfully');
+
+        // Set data from server responses - Handle both formats
+        const categoriesData = categoriesResponse.data || categoriesResponse || [];
+        const discountData = discountResponse.data?.data || discountResponse.data || [];
+        const popularData = popularResponse.data?.data || popularResponse.data || [];
+        const newData = newResponse.data?.data || newResponse.data || [];
+        const bestsellerData = bestsellerResponse.data?.data || bestsellerResponse.data || [];
+        const categoryProductSectionsData = categoryProductsResponse.data?.data || categoryProductsResponse.data || [];
+
+        setCategories(categoriesData);
+        setDiscountProducts(discountData);
+        setPopularProducts(popularData);
+        setNewProducts(newData);
+        setBestsellerProducts(bestsellerData);
+        setCategoryProductSections(categoryProductSectionsData);
+
+        console.log('✅ Data loaded successfully:', {
+          categoriesCount: categoriesData.length,
+          discountCount: discountData.length,
+          popularCount: popularData.length,
+          newCount: newData.length,
+          bestsellerCount: bestsellerData.length,
+          categoryProductSectionsCount: categoryProductSectionsData.length
         });
-        setProductsBySubCategory(bySubCat);
+
       } catch (err) {
-        setError('Không thể tải dữ liệu trang chủ');
+        console.error('❌ Error fetching data:', err);
+        setError('Không thể tải dữ liệu. Vui lòng thử lại sau.');
       } finally {
         setLoading(false);
       }
     };
+
     fetchData();
   }, []);
 
-  const handleViewDetail = (product) => {
+  const handleProductClick = (product) => {
     navigate(`/products/${product.id_SanPham}`);
   };
 
-  if (loading) return <Box textAlign="center" mt={8}><CircularProgress /></Box>;
-  if (error) return <Typography color="error" align="center">{error}</Typography>;
+  const handleQuickOrder = () => {
+    alert('Vui lòng gọi hotline: 0123-456-789 để đặt hàng nhanh!');
+  };
+
+  const handleViewMore = (categoryId) => {
+    navigate(`/products?category=${categoryId}`);
+  };
+
+  if (loading) {
+    return (
+      <div className={styles.loading}>
+        <div className={styles.spinner}></div>
+        <p>Đang tải dữ liệu...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className={styles.error}>
+        <h3>Có lỗi xảy ra</h3>
+        <p>{error}</p>
+        <button onClick={() => window.location.reload()}>Thử lại</button>
+      </div>
+    );
+  }
 
   return (
-    <div className={styles.homeWrap}>
-      {/* Banner động */}
+    <div className={styles.homePage}>
+      {/* Banner Slider */}
       <BannerSlider />
-      {/* Sản phẩm khuyến mãi */}
-      <HomeSection title="Hoa tươi giảm giá" products={productsDiscount} onViewDetail={handleViewDetail} />
-      {/* Sản phẩm mới nhất */}
-      <HomeSection title="Sản phẩm mới nhất" products={productsNew} onViewDetail={handleViewDetail} />
-      {/* Hiển thị danh mục cha và các block danh mục con */}
-      {categories.map(cat => (
-        <Box key={cat.id_DanhMuc} mb={4}>
-          <Typography variant="h5" color="secondary" fontWeight={700} mb={2}>{cat.tenDanhMuc}</Typography>
-          {cat.SubCategories && cat.SubCategories.map(sub => (
-            <HomeSection
-              key={sub.id_DanhMucChiTiet}
-              title={sub.tenDanhMucChiTiet}
-              products={productsBySubCategory[sub.tenDanhMucChiTiet]}
-              onViewDetail={handleViewDetail}
+
+      {/* Quick Order Button */}
+      <div className={styles.quickOrderSection}>
+        <button 
+          className={styles.quickOrderBtn}
+          onClick={handleQuickOrder}
+        >
+          📞 Đặt Hàng Nhanh
+        </button>
+      </div>
+
+      {/* Main Content */}
+      <div className={styles.mainContent}>
+        
+        {/* Discount Products Section */}
+        {discountProducts.length > 0 && (
+          <HomeSection 
+            title="🔥 Sản phẩm giảm giá" 
+            subtitle="Ưu đãi hấp dẫn - Số lượng có hạn"
+            onViewMore={() => navigate('/products?discount=true')}
+          >
+            <ProductList 
+              products={discountProducts} 
+              onProductClick={handleProductClick}
             />
-          ))}
-        </Box>
-      ))}
-      {/* Giới thiệu shop */}
-      <Box mt={8} mb={4} className={styles.introBlock}>
-        <Card className={styles.introCard}>
-          <CardContent>
-            <Typography variant="h5" gutterBottom color="secondary" fontWeight={700}>Shop Hoa Tươi Hoashop</Typography>
-            <Typography variant="body1" color="text.secondary" mb={2}>
-              Hoashop chuyên cung cấp các loại hoa tươi, hoa bó, hoa sự kiện, hoa khai trương, hoa sinh nhật... Giao hàng nhanh, chất lượng đảm bảo, giá tốt nhất.
-            </Typography>
-            <Button variant="contained" color="secondary" sx={{ mt: 2 }} onClick={() => window.open('https://zalo.me', '_blank')}>Liên hệ Zalo</Button>
-          </CardContent>
-        </Card>
-      </Box>
+          </HomeSection>
+        )}
+
+        {/* Popular Products Section */}
+        {popularProducts.length > 0 && (
+          <HomeSection 
+            title="⭐ Sản phẩm phổ biến" 
+            subtitle="Được khách hàng yêu thích nhất"
+            onViewMore={() => navigate('/products?popular=true')}
+          >
+            <ProductList 
+              products={popularProducts} 
+              onProductClick={handleProductClick}
+            />
+          </HomeSection>
+        )}
+
+        {/* New Products Section */}
+        {newProducts.length > 0 && (
+          <HomeSection 
+            title="🆕 Sản phẩm mới" 
+            subtitle="Bộ sưu tập mới nhất"
+            onViewMore={() => navigate('/products?new=true')}
+          >
+            <ProductList 
+              products={newProducts} 
+              onProductClick={handleProductClick}
+            />
+          </HomeSection>
+        )}
+
+        {/* Bestseller Products Section */}
+        {bestsellerProducts.length > 0 && (
+          <HomeSection 
+            title="🏆 Sản phẩm bán chạy" 
+            subtitle="Top sản phẩm được mua nhiều nhất"
+            onViewMore={() => navigate('/products?bestseller=true')}
+          >
+            <ProductList 
+              products={bestsellerProducts} 
+              onProductClick={handleProductClick}
+            />
+          </HomeSection>
+        )}
+
+        {/* Category Sections - Mỗi danh mục là 1 section riêng */}
+        {categoryProductSections.map((categorySection) => (
+          <HomeSection 
+            key={categorySection.categoryId}
+            title={`🌺 ${categorySection.categoryName}`} 
+            subtitle={`${categorySection.products.length} sản phẩm chọn lọc`}
+            onViewMore={() => handleViewMore(categorySection.categoryId)}
+          >
+            <ProductList 
+              products={categorySection.products} 
+              onProductClick={handleProductClick}
+            />
+          </HomeSection>
+        ))}
+
+        {/* Show message if no products */}
+        {discountProducts.length === 0 && 
+         popularProducts.length === 0 && 
+         newProducts.length === 0 && 
+         bestsellerProducts.length === 0 && 
+         categoryProductSections.length === 0 && (
+          <div style={{ textAlign: 'center', padding: '60px 20px' }}>
+            <h3>Không có sản phẩm nào</h3>
+            <p>Vui lòng kiểm tra lại kết nối API hoặc database</p>
+          </div>
+        )}
+      </div>
     </div>
   );
 };

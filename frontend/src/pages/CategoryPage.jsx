@@ -14,8 +14,13 @@ const CategoryPage = () => {
 
   useEffect(() => {
     const fetchCategories = async () => {
-      const res = await api.get('/categories');
-      setCategories(res.data);
+      try {
+        const res = await api.get('/categories');
+        setCategories(res.data?.data || []);
+      } catch (error) {
+        console.error('Error fetching categories:', error);
+        setCategories([]);
+      }
     };
     fetchCategories();
   }, []);
@@ -52,8 +57,9 @@ const CategoryPage = () => {
         }
         
         const res = await api.get(url);
-        setProducts(res.data);
+        setProducts(res.data?.data || []);
       } catch (error) {
+        console.error('Error fetching products:', error);
         setProducts([]);
       } finally {
         setLoading(false);

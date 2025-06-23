@@ -10,6 +10,7 @@ const Order = require('./Order');
 const OrderDetail = require('./OrderDetail');
 const Voucher = require('./Voucher');
 const Review = require('./Review');
+const QuickOrder = require('./QuickOrder');
 
 // Thiết lập quan hệ theo cấu trúc database
 // Category - SubCategory: 1-nhiều
@@ -50,5 +51,6 @@ module.exports = {
   Order, 
   OrderDetail, 
   Voucher, 
-  Review 
+  Review,
+  QuickOrder
 }; 

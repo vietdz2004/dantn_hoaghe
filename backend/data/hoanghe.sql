@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Máy chủ: 127.0.0.1
--- Thời gian đã tạo: Th6 12, 2025 lúc 05:05 PM
+-- Thời gian đã tạo: Th6 23, 2025 lúc 03:56 PM
 -- Phiên bản máy phục vụ: 10.4.32-MariaDB
 -- Phiên bản PHP: 8.0.30
 
@@ -67,7 +67,11 @@ CREATE TABLE `danhmuc` (
 
 INSERT INTO `danhmuc` (`id_DanhMuc`, `tenDanhMuc`) VALUES
 (1, 'Hoa Sinh Nhật'),
-(2, 'Hoa Chúc Mừng');
+(2, 'Hoa Chúc Mừng'),
+(4, 'Hoa Tình Yêu'),
+(5, 'Hoa Khai Trương'),
+(6, 'Hoa Tang Lễ'),
+(7, 'Hoa Tổng Hợp');
 
 -- --------------------------------------------------------
 
@@ -112,6 +116,33 @@ CREATE TABLE `donhang` (
 -- --------------------------------------------------------
 
 --
+-- Cấu trúc bảng cho bảng `don_hang_nhanh`
+--
+
+CREATE TABLE `don_hang_nhanh` (
+  `id` int(11) NOT NULL,
+  `maDonNhanh` varchar(20) NOT NULL COMMENT 'Mã đơn hàng nhanh (QO + timestamp)',
+  `tenKhachHang` varchar(100) NOT NULL COMMENT 'Họ tên khách hàng',
+  `soDienThoai` varchar(15) NOT NULL COMMENT 'Số điện thoại khách hàng',
+  `maSanPham` int(11) NOT NULL COMMENT 'ID sản phẩm',
+  `tenSanPham` varchar(200) NOT NULL COMMENT 'Tên sản phẩm tại thời điểm đặt',
+  `soLuong` int(11) DEFAULT 1 COMMENT 'Số lượng đặt',
+  `giaTaiThoiDiem` decimal(10,2) NOT NULL COMMENT 'Giá sản phẩm tại thời điểm đặt',
+  `tongTien` decimal(10,2) NOT NULL COMMENT 'Tổng tiền = giaTaiThoiDiem * soLuong',
+  `trangThai` enum('CHO_XU_LY','DA_LIEN_HE','DA_XAC_NHAN','DANG_GIAO','HOAN_THANH','HUY') DEFAULT 'CHO_XU_LY' COMMENT 'Trạng thái đơn hàng',
+  `ghiChu` text DEFAULT NULL COMMENT 'Ghi chú từ khách hàng hoặc nhân viên',
+  `nhanVienXuLy` int(11) DEFAULT NULL COMMENT 'ID nhân viên xử lý',
+  `thoiGianLienHe` datetime DEFAULT NULL COMMENT 'Thời gian nhân viên liên hệ khách hàng',
+  `diaChiGiao` text DEFAULT NULL COMMENT 'Địa chỉ giao hàng (được cập nhật sau khi liên hệ)',
+  `thoiGianGiao` datetime DEFAULT NULL COMMENT 'Thời gian giao hàng mong muốn',
+  `priority` int(11) DEFAULT 5 COMMENT 'Độ ưu tiên (1-10, số càng nhỏ càng ưu tiên)',
+  `createdAt` datetime NOT NULL DEFAULT current_timestamp(),
+  `updatedAt` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Bảng đơn đặt hàng nhanh';
+
+-- --------------------------------------------------------
+
+--
 -- Cấu trúc bảng cho bảng `nguoidung`
 --
 
@@ -131,6 +162,33 @@ CREATE TABLE `nguoidung` (
 -- --------------------------------------------------------
 
 --
+-- Cấu trúc bảng cho bảng `quick_orders`
+--
+
+CREATE TABLE `quick_orders` (
+  `id` int(11) NOT NULL,
+  `maDonNhanh` varchar(20) NOT NULL COMMENT 'Mã đơn hàng nhanh (QO + timestamp)',
+  `tenKhachHang` varchar(100) NOT NULL COMMENT 'Họ tên khách hàng',
+  `soDienThoai` varchar(15) NOT NULL COMMENT 'Số điện thoại khách hàng',
+  `maSanPham` int(11) NOT NULL COMMENT 'ID sản phẩm',
+  `tenSanPham` varchar(200) NOT NULL COMMENT 'Tên sản phẩm tại thời điểm đặt',
+  `soLuong` int(11) DEFAULT 1 COMMENT 'Số lượng đặt',
+  `giaTaiThoiDiem` decimal(10,2) NOT NULL COMMENT 'Giá sản phẩm tại thời điểm đặt',
+  `tongTien` decimal(10,2) NOT NULL COMMENT 'Tổng tiền = giaTaiThoiDiem * soLuong',
+  `trangThai` enum('CHO_XU_LY','DA_LIEN_HE','DA_XAC_NHAN','DANG_GIAO','HOAN_THANH','HUY') DEFAULT 'CHO_XU_LY' COMMENT 'Trạng thái đơn hàng',
+  `ghiChu` text DEFAULT NULL COMMENT 'Ghi chú từ khách hàng hoặc nhân viên',
+  `nhanVienXuLy` int(11) DEFAULT NULL COMMENT 'ID nhân viên xử lý',
+  `thoiGianLienHe` datetime DEFAULT NULL COMMENT 'Thời gian nhân viên liên hệ khách hàng',
+  `diaChiGiao` text DEFAULT NULL COMMENT 'Địa chỉ giao hàng (được cập nhật sau khi liên hệ)',
+  `thoiGianGiao` datetime DEFAULT NULL COMMENT 'Thời gian giao hàng mong muốn',
+  `priority` int(11) DEFAULT 5 COMMENT 'Độ ưu tiên (1-10, số càng nhỏ càng ưu tiên)',
+  `createdAt` datetime NOT NULL DEFAULT current_timestamp(),
+  `updatedAt` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Bảng đơn đặt hàng nhanh';
+
+-- --------------------------------------------------------
+
+--
 -- Cấu trúc bảng cho bảng `sanpham`
 --
 
@@ -143,17 +201,31 @@ CREATE TABLE `sanpham` (
   `thuongHieu` varchar(255) DEFAULT NULL,
   `gia` decimal(10,2) DEFAULT NULL,
   `giaKhuyenMai` decimal(10,2) DEFAULT NULL,
-  `id_DanhMucChiTiet` int(11) DEFAULT NULL
+  `id_DanhMucChiTiet` int(11) DEFAULT NULL,
+  `trangThai` varchar(20) DEFAULT 'active',
+  `soLuong` int(11) NOT NULL DEFAULT 0,
+  `seoTitle` varchar(255) DEFAULT NULL COMMENT 'SEO Title for search engines',
+  `seoDescription` text DEFAULT NULL COMMENT 'SEO Meta Description for search engines',
+  `seoKeywords` text DEFAULT NULL COMMENT 'SEO Keywords separated by commas',
+  `slug` varchar(255) DEFAULT NULL COMMENT 'URL-friendly slug for product page',
+  `soLuongTon` int(11) NOT NULL DEFAULT 0 COMMENT 'Số lượng tồn kho',
+  `soLuongToiThieu` int(11) NOT NULL DEFAULT 5 COMMENT 'Số lượng tồn kho tối thiểu để cảnh báo'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Đang đổ dữ liệu cho bảng `sanpham`
 --
 
-INSERT INTO `sanpham` (`id_SanPham`, `maSKU`, `tenSp`, `moTa`, `hinhAnh`, `thuongHieu`, `gia`, `giaKhuyenMai`, `id_DanhMucChiTiet`) VALUES
-(1, 'SKU001', 'Bó hoa hồng đỏ', 'Hoa hồng đỏ tươi, ý nghĩa tình yêu', 'rose.jpg', 'FlowerCorner', 500000.00, 450000.00, 1),
-(2, 'SKU002', 'Lẵng hoa cúc vàng', 'Mang lại niềm vui, thành công', 'daisy.jpg', 'FlowerCorner', 600000.00, NULL, 2),
-(3, 'SKU003', 'Giỏ hoa khai trương', 'Chúc khai trương phát đạt', 'event.jpg', 'FlowerCorner', 800000.00, 750000.00, 3);
+INSERT INTO `sanpham` (`id_SanPham`, `maSKU`, `tenSp`, `moTa`, `hinhAnh`, `thuongHieu`, `gia`, `giaKhuyenMai`, `id_DanhMucChiTiet`, `trangThai`, `soLuong`, `seoTitle`, `seoDescription`, `seoKeywords`, `slug`, `soLuongTon`, `soLuongToiThieu`) VALUES
+(10, 'SKU001', 'Bó hoa hồng đỏ cao cấp', 'Bó hoa hồng đỏ tươi 12 bông, ý nghĩa tình yêu hoàn hảo', '/images/products/daisy.jpg', 'FlowerCorner', 450000.00, 399000.00, 1, 'active', 0, 'Bó Hoa Hồng Đỏ Cao Cấp - Tặng Người Yêu | HoaShop', 'Bó hoa hồng đỏ tươi 12 bông biểu tượng tình yêu. Chất lượng cao, giao hàng nhanh, giá tốt. Đặt ngay!', 'hoa hồng đỏ, hoa tươi, quà tặng, hoa sinh nhật, hoa valentine', 'bo-hoa-hong-do-cao-cap', 50, 5),
+(11, 'SKU002', 'Lẵng hoa cúc vàng tươi', 'Lẵng hoa cúc vàng tươi mang lại niềm vui và may mắn', '/images/products/event.jpg', 'FlowerCorner', 350000.00, NULL, 2, 'active', 0, 'Lẵng Hoa Cúc Vàng Tươi - Mang Lại May Mắn | HoaShop', 'Lẵng hoa cúc vàng tươi đẹp, mang ý nghĩa may mắn. Giao hàng tận nơi, chất lượng đảm bảo.', 'hoa cúc vàng, lẵng hoa, hoa tươi, may mắn, khai trương', 'lang-hoa-cuc-vang-tuoi', 30, 3),
+(12, 'SKU003', 'Giỏ hoa khai trương', 'Giỏ hoa chúc mừng khai trương phát đạt, thịnh vượng', '/images/products/product-1750594227200-929108794.webp', 'FlowerCorner', 800000.00, 750000.00, 3, 'active', 0, 'Giỏ Hoa Khai Trương - Chúc Mừng Thành Công | HoaShop', 'Giỏ hoa khai trương đẹp, ý nghĩa phát đạt thịnh vượng. Thiết kế hiện đại, giao hàng nhanh.', 'giỏ hoa khai trương, hoa chúc mừng, khai trương, phát đạt', 'gio-hoa-khai-truong', 15, 2),
+(13, 'SKU004', 'Bó hoa tulip đỏ nhập khẩu', 'Bó hoa tulip đỏ nhập khẩu Hà Lan cao cấp', '/images/products/rose.jpg', 'Holland Flowers', 650000.00, NULL, 1, 'active', 0, 'Bó Hoa Tulip Đỏ Nhập Khẩu Hà Lan | HoaShop', 'Hoa tulip đỏ nhập khẩu Hà Lan chính hãng. Chất lượng cao cấp, tươi lâu, giao hàng nhanh.', 'hoa tulip đỏ, nhập khẩu, hà lan, hoa cao cấp, quà tặng', 'bo-hoa-tulip-do-nhap-khau', 25, 5),
+(14, 'SKU005', 'Hoa baby trắng thơm', 'Hoa baby trắng thơm ngát, trang trí đẹp', '/images/products/product-1750598743293-184511824.webp', 'VietFlower', 120000.00, 100000.00, 2, 'active', 0, 'Hoa Baby Trắng Thơm - Trang Trí Đẹp | HoaShop', 'Hoa baby trắng thơm ngát, trang trí đẹp cho không gian. Giá ưu đãi, chất lượng tốt.', 'hoa baby trắng, hoa trang trí, thơm ngát, giá rẻ', 'hoa-baby-trang-thom', 0, 10),
+(15, 'SKU006', 'Chậu lan hồ điệp tím', 'Chậu lan hồ điệp tím cao cấp, sang trọng', '/images/products/product-1750598735349-755866346.webp', 'OrchidVN', 1200000.00, NULL, 4, 'active', 0, 'Chậu Lan Hồ Điệp Tím Cao Cấp - Sang Trọng | HoaShop', 'Lan hồ điệp tím cao cấp, sang trọng. Chậu đẹp, hoa to, màu sắc đẹp. Tặng kèm hướng dẫn chăm sóc.', 'lan hồ điệp tím, lan cao cấp, chậu hoa, sang trọng', 'chau-lan-ho-diep-tim', 8, 2),
+(16, 'SKU007', 'Hoa hướng dương mini', 'Bó hoa hướng dương mini tươi tắn, năng động', '/images/products/product-1750598726921-701225680.webp', 'SunFlower', 280000.00, 250000.00, 2, 'active', 0, 'Hoa Hướng Dương Mini - Tươi Tắn Năng Động | HoaShop', 'Bó hoa hướng dương mini tươi tắn, mang năng lượng tích cực. Màu vàng rực rỡ, giá ưu đãi.', 'hoa hướng dương mini, tươi tắn, năng động, màu vàng', 'hoa-huong-duong-mini', 40, 8),
+(17, 'SKU537661886', 'hoa cuc', 'cuc hoa aiuuu diep ', '/images/products/product-1750598553683-32833951.webp', 'cucuc', 800000.00, 600000.00, 1, 'active', 0, 'hoa cuc - Chất Lượng Cao | HoaShop', 'hoa cuc dep sieu nhan', 'hoa cuc ', 'hoa-cuc', 1000, 5),
+(18, 'SKU438299495', 'hoa huệ ', 'hoa huệ hoa huệ hoa huệ hoa huệ hoa huệ ', '/images/products/product-1750605448325-580859059.webp', 'hoa huệ ', 888888.00, 777777.00, 3, 'active', 0, 'h - Chất Lượng Cao | HoaShop', NULL, NULL, 'hoa-hue', 0, 5);
 
 -- --------------------------------------------------------
 
@@ -211,10 +283,36 @@ ALTER TABLE `donhang`
   ADD KEY `id_voucher` (`id_voucher`);
 
 --
+-- Chỉ mục cho bảng `don_hang_nhanh`
+--
+ALTER TABLE `don_hang_nhanh`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `uq_maDonNhanh` (`maDonNhanh`),
+  ADD KEY `idx_trangThai` (`trangThai`),
+  ADD KEY `idx_soDienThoai` (`soDienThoai`),
+  ADD KEY `idx_priority_created` (`priority`,`createdAt`),
+  ADD KEY `idx_maSanPham` (`maSanPham`),
+  ADD KEY `idx_phone_product_time` (`soDienThoai`,`maSanPham`,`createdAt`),
+  ADD KEY `idx_staff_processing` (`nhanVienXuLy`,`trangThai`);
+
+--
 -- Chỉ mục cho bảng `nguoidung`
 --
 ALTER TABLE `nguoidung`
   ADD PRIMARY KEY (`id_NguoiDung`);
+
+--
+-- Chỉ mục cho bảng `quick_orders`
+--
+ALTER TABLE `quick_orders`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `uq_maDonNhanh` (`maDonNhanh`),
+  ADD KEY `idx_trangThai` (`trangThai`),
+  ADD KEY `idx_soDienThoai` (`soDienThoai`),
+  ADD KEY `idx_priority_created` (`priority`,`createdAt`),
+  ADD KEY `idx_maSanPham` (`maSanPham`),
+  ADD KEY `idx_phone_product_time` (`soDienThoai`,`maSanPham`,`createdAt`),
+  ADD KEY `idx_staff_processing` (`nhanVienXuLy`,`trangThai`);
 
 --
 -- Chỉ mục cho bảng `sanpham`
@@ -222,7 +320,10 @@ ALTER TABLE `nguoidung`
 ALTER TABLE `sanpham`
   ADD PRIMARY KEY (`id_SanPham`),
   ADD UNIQUE KEY `maSKU` (`maSKU`),
-  ADD KEY `id_DanhMucChiTiet` (`id_DanhMucChiTiet`);
+  ADD KEY `id_DanhMucChiTiet` (`id_DanhMucChiTiet`),
+  ADD KEY `idx_slug` (`slug`),
+  ADD KEY `idx_seo_title` (`seoTitle`),
+  ADD KEY `idx_stock` (`soLuongTon`);
 
 --
 -- Chỉ mục cho bảng `voucher`
@@ -250,13 +351,13 @@ ALTER TABLE `danhgia`
 -- AUTO_INCREMENT cho bảng `danhmuc`
 --
 ALTER TABLE `danhmuc`
-  MODIFY `id_DanhMuc` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id_DanhMuc` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
 
 --
 -- AUTO_INCREMENT cho bảng `danhmucchitiet`
 --
 ALTER TABLE `danhmucchitiet`
-  MODIFY `id_DanhMucChiTiet` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+  MODIFY `id_DanhMucChiTiet` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
 --
 -- AUTO_INCREMENT cho bảng `donhang`
@@ -265,16 +366,28 @@ ALTER TABLE `donhang`
   MODIFY `id_DonHang` int(11) NOT NULL AUTO_INCREMENT;
 
 --
+-- AUTO_INCREMENT cho bảng `don_hang_nhanh`
+--
+ALTER TABLE `don_hang_nhanh`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT cho bảng `nguoidung`
 --
 ALTER TABLE `nguoidung`
   MODIFY `id_NguoiDung` int(11) NOT NULL AUTO_INCREMENT;
 
 --
+-- AUTO_INCREMENT cho bảng `quick_orders`
+--
+ALTER TABLE `quick_orders`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT cho bảng `sanpham`
 --
 ALTER TABLE `sanpham`
-  MODIFY `id_SanPham` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `id_SanPham` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=19;
 
 --
 -- AUTO_INCREMENT cho bảng `voucher`

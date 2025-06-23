@@ -6,9 +6,17 @@ exports.getAll = async (req, res) => {
     const categories = await Category.findAll({
       include: [SubCategory]
     });
-    res.json(categories);
+    res.json({
+      success: true,
+      data: categories,
+      message: 'Lấy danh sách danh mục thành công'
+    });
   } catch (error) {
-    res.status(500).json({ message: 'Lỗi server', error: error.message });
+    res.status(500).json({ 
+      success: false,
+      message: 'Lỗi server', 
+      error: error.message 
+    });
   }
 };
 

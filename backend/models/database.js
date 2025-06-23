@@ -13,4 +13,6 @@ const sequelize = new Sequelize(
   }
 );
 
-module.exports = sequelize; 
+// Export both default and named exports for compatibility
+module.exports = sequelize;
+module.exports.sequelize = sequelize; 

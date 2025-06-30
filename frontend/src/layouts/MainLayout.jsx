@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import Header from '../components/Header';
-import CategoryMenu from '../components/CategoryMenu';
 import styles from './MainLayout.module.scss';
 import Footer from '../components/Footer';
 
@@ -40,7 +39,6 @@ const MainLayout = ({ children }) => {
   return (
     <>
       <Header isScrolled={isScrolled} />
-      <CategoryMenu isScrolled={isScrolled} />
       <main className={styles.contentWrap}>
         {children}
       </main>

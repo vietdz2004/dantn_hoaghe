@@ -49,4 +49,44 @@ const User = sequelize.define('User', {
   timestamps: false,
 });
 
+// Helper methods for authentication
+User.findByEmail = async function(email) {
+  try {
+    const user = await this.findOne({
+      where: { email: email }
+    });
+    return user ? user.toJSON() : null;
+  } catch (error) {
+    console.error('findByEmail error:', error);
+    return null;
+  }
+};
+
+User.findById = async function(id) {
+  try {
+    const user = await this.findByPk(id);
+    return user ? user.toJSON() : null;
+  } catch (error) {
+    console.error('findById error:', error);
+    return null;
+  }
+};
+
+User.createUser = async function(userData) {
+  try {
+    const user = await this.create({
+      ten: userData.hoTen,
+      email: userData.email,
+      soDienThoai: userData.soDienThoai,
+      matKhau: userData.matKhau,
+      vaiTro: userData.vaiTro || 'KHACH_HANG',
+      trangThai: 'HOAT_DONG'
+    });
+    return user.id_NguoiDung;
+  } catch (error) {
+    console.error('createUser error:', error);
+    throw error;
+  }
+};
+
 module.exports = User; 

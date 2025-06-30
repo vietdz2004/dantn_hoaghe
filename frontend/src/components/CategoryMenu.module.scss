@@ -582,3 +582,67 @@
 .navItem button:hover {
   color: var(--accent-pink);
 }
+
+/* Loading/Error States */
+.loading {
+  background: #fff;
+  min-height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-top: 3px solid #f8bbd0;
+}
+
+.loadingText {
+  color: #e91e63;
+  font-size: 14px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.loadingText::before {
+  content: '⏳';
+  animation: spin 1s linear infinite;
+}
+
+.errorText {
+  color: #d32f2f;
+  font-size: 14px;
+  padding: 12px 20px;
+  text-align: center;
+}
+
+.emptyText {
+  color: #666;
+  font-size: 14px;
+  padding: 12px 20px;
+  text-align: center;
+  font-style: italic;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Fix z-index issues */
+.menuWrap {
+  position: relative; /* ✅ Thay vì sticky nếu gây lỗi */
+  z-index: 100;
+}
+
+.menuContainer {
+  position: relative;
+  z-index: 101;
+}
+
+/* Ensure visibility */
+.menuList {
+  display: flex !important; /* ✅ Force display */
+}
+
+.menuItem {
+  display: flex !important; /* ✅ Force display */
+}

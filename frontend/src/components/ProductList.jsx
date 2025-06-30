@@ -1,6 +1,7 @@
 import React from 'react';
 import styles from './ProductList.module.scss';
 import { Card, CardContent, CardMedia, Typography, Button, Box, Chip } from '@mui/material';
+import AddToCartButton from './AddToCartButton';
 
 // Format giá theo chuẩn Việt Nam
 const formatGia = (gia) => {
@@ -17,11 +18,11 @@ const getImageUrl = (hinhAnh) => {
   
   // Nếu có đường dẫn relative thì thêm backend URL
   if (hinhAnh.startsWith('/')) {
-    return `http://localhost:5000${hinhAnh}`;
+    return `http://localhost:5002${hinhAnh}`;
   }
   
   // Fallback cho trường hợp khác
-  return `http://localhost:5000/images/products/${hinhAnh}`;
+  return `http://localhost:5002/images/products/${hinhAnh}`;
 };
 
 // Tính phần trăm giảm giá
@@ -44,11 +45,12 @@ const ProductList = ({ products, onProductClick }) => {
           
           return (
             <div key={product.id_SanPham} className={styles.gridItem}>
-              <Card 
-                className={styles.card}
-                onClick={() => onProductClick && onProductClick(product)}
-              >
-                <Box className={styles.imgBox}>
+              <Card className={styles.card}>
+                <Box 
+                  className={styles.imgBox}
+                  onClick={() => onProductClick && onProductClick(product)}
+                  sx={{ cursor: 'pointer' }}
+                >
                   {/* Hiển thị phần trăm giảm giá cho tất cả sản phẩm có giảm giá */}
                   {hasDiscount && discountPercent > 0 && (
                     <Chip
@@ -70,7 +72,13 @@ const ProductList = ({ products, onProductClick }) => {
                   />
                 </Box>
                 <CardContent className={styles.cardContent}>
-                  <Typography variant="h6" component="div" className={styles.productName}>
+                  <Typography 
+                    variant="h6" 
+                    component="div" 
+                    className={styles.productName}
+                    onClick={() => onProductClick && onProductClick(product)}
+                    sx={{ cursor: 'pointer' }}
+                  >
                     {product.tenSp}
                   </Typography>
                   <Box className={styles.priceBlock}>
@@ -83,17 +91,27 @@ const ProductList = ({ products, onProductClick }) => {
                       <span className={styles.salePrice}>{formatGia(product.gia)}</span>
                     )}
                   </Box>
-                  <Button
-                    variant="contained"
-                    size="small"
-                    className={styles.detailBtn}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onProductClick && onProductClick(product);
-                    }}
-                  >
-                    ĐẶT HÀNG
-                  </Button>
+                  
+                  {/* Action Buttons */}
+                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, mt: 2 }}>
+                    <AddToCartButton 
+                      product={product}
+                      variant="contained"
+                      size="small"
+                      fullWidth
+                    />
+                    <Button
+                      variant="outlined"
+                      size="small"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onProductClick && onProductClick(product);
+                      }}
+                      sx={{ textTransform: 'none' }}
+                    >
+                      Xem chi tiết
+                    </Button>
+                  </Box>
                 </CardContent>
               </Card>
             </div>

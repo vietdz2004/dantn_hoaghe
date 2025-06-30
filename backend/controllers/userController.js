@@ -1,6 +1,8 @@
 const { User } = require('../models');
 const { Op, QueryTypes } = require('sequelize');
 const { sequelize } = require('../models/database');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
 
 // Lấy tất cả người dùng với RAW SQL filtering, search, pagination, sorting
 exports.getAll = async (req, res) => {
@@ -392,4 +394,249 @@ exports.getUserStats = async (req, res) => {
   } catch (error) {
     res.status(500).json({ message: 'Lỗi server', error: error.message });
   }
+};
+
+// AUTH ENDPOINTS
+
+// Đăng ký người dùng
+const register = async (req, res) => {
+  try {
+    const { hoTen, email, soDienThoai, matKhau } = req.body;
+
+    // Validate input
+    if (!hoTen || !email || !soDienThoai || !matKhau) {
+      return res.status(400).json({
+        success: false,
+        message: 'Vui lòng điền đầy đủ thông tin'
+      });
+    }
+
+    // Check if user already exists
+    const existingUser = await User.findOne({ where: { email } });
+    if (existingUser) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email đã được sử dụng'
+      });
+    }
+
+    // Hash password
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(matKhau, salt);
+
+    // Create user
+    const userData = {
+      ten: hoTen,
+      email,
+      soDienThoai,
+      matKhau: hashedPassword,
+      vaiTro: 'KHACH_HANG',
+      trangThai: 'HOAT_DONG'
+    };
+
+    const user = await User.create(userData);
+
+    // Generate JWT token
+    const token = jwt.sign(
+      { id: user.id_NguoiDung, email: user.email, vaiTro: user.vaiTro },
+      process.env.JWT_SECRET || 'your-secret-key',
+      { expiresIn: '24h' }
+    );
+
+    // Remove password from response
+    const userResponse = user.toJSON();
+    delete userResponse.matKhau;
+
+    res.status(201).json({
+      success: true,
+      data: {
+        user: userResponse,
+        token
+      },
+      message: 'Đăng ký thành công'
+    });
+  } catch (error) {
+    console.error('Register error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Lỗi hệ thống khi đăng ký',
+      error: error.message
+    });
+  }
+};
+
+// Đăng nhập
+const login = async (req, res) => {
+  try {
+    const { email, matKhau } = req.body;
+
+    // Validate input
+    if (!email || !matKhau) {
+      return res.status(400).json({
+        success: false,
+        message: 'Vui lòng nhập email và mật khẩu'
+      });
+    }
+
+    // Find user by email
+    const user = await User.findOne({ where: { email } });
+    if (!user) {
+      return res.status(401).json({
+        success: false,
+        message: 'Email hoặc mật khẩu không đúng'
+      });
+    }
+
+    // Check password
+    const isPasswordValid = await bcrypt.compare(matKhau, user.matKhau);
+    if (!isPasswordValid) {
+      return res.status(401).json({
+        success: false,
+        message: 'Email hoặc mật khẩu không đúng'
+      });
+    }
+
+    // Generate JWT token
+    const token = jwt.sign(
+      { id: user.id_NguoiDung, email: user.email, vaiTro: user.vaiTro },
+      process.env.JWT_SECRET || 'your-secret-key',
+      { expiresIn: '24h' }
+    );
+
+    // Remove password from response
+    const userResponse = user.toJSON();
+    delete userResponse.matKhau;
+
+    res.json({
+      success: true,
+      data: {
+        user: userResponse,
+        token
+      },
+      message: 'Đăng nhập thành công'
+    });
+  } catch (error) {
+    console.error('Login error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Lỗi hệ thống khi đăng nhập',
+      error: error.message
+    });
+  }
+};
+
+// Xác thực token
+const verifyToken = async (req, res) => {
+  try {
+    const token = req.headers.authorization?.split(' ')[1];
+
+    if (!token) {
+      return res.status(401).json({
+        success: false,
+        message: 'Không tìm thấy token xác thực'
+      });
+    }
+
+    // Verify token
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
+    
+    // Get user info
+    const user = await User.findByPk(decoded.id);
+    if (!user) {
+      return res.status(401).json({
+        success: false,
+        message: 'Token không hợp lệ'
+      });
+    }
+
+    // Remove password from response
+    const userResponse = user.toJSON();
+    delete userResponse.matKhau;
+
+    res.json({
+      success: true,
+      data: {
+        user: userResponse
+      },
+      message: 'Token hợp lệ'
+    });
+  } catch (error) {
+    console.error('Verify token error:', error);
+    res.status(401).json({
+      success: false,
+      message: 'Token không hợp lệ hoặc đã hết hạn',
+      error: error.message
+    });
+  }
+};
+
+// Đăng xuất (chỉ trả về thông báo thành công)
+const logout = async (req, res) => {
+  try {
+    res.json({
+      success: true,
+      message: 'Đăng xuất thành công'
+    });
+  } catch (error) {
+    console.error('Logout error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Lỗi khi đăng xuất',
+      error: error.message
+    });
+  }
+};
+
+// Cập nhật profile người dùng
+const updateProfile = async (req, res) => {
+  try {
+    const userId = req.user.id; // From auth middleware
+    const userData = req.body;
+
+    // Remove sensitive fields that shouldn't be updated via this endpoint
+    delete userData.matKhau;
+    delete userData.vaiTro;
+    delete userData.id;
+
+    const user = await User.findByPk(userId);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'Không tìm thấy người dùng'
+      });
+    }
+
+    await user.update(userData);
+    const updatedUser = user.toJSON();
+    delete updatedUser.matKhau;
+
+    res.json({
+      success: true,
+      data: {
+        user: updatedUser
+      },
+      message: 'Cập nhật thông tin thành công'
+    });
+  } catch (error) {
+    console.error('Update profile error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Lỗi khi cập nhật thông tin',
+      error: error.message
+    });
+  }
+};
+
+module.exports = {
+  getAll: exports.getAll,
+  getById: exports.getById,
+  create: exports.create,
+  update: exports.update,
+  delete: exports.delete,
+  getUserStats: exports.getUserStats,
+  register,
+  login,
+  verifyToken,
+  logout,
+  updateProfile
 }; 

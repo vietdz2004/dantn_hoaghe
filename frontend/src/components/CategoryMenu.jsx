@@ -1,10 +1,12 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import api from '../services/api';
+import { categoriesAPI } from '../services/api';
 import styles from './CategoryMenu.module.scss';
 
 const CategoryMenu = ({ isScrolled }) => {
   const [categories, setCategories] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [open, setOpen] = useState(false); // mobile menu
   const [openSub, setOpenSub] = useState(null); // subMenu accordion
   const menuRef = useRef(null);
@@ -25,14 +27,30 @@ const CategoryMenu = ({ isScrolled }) => {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const res = await api.get('/categories');
-        // Fix: API trả về { success: true, data: categories, message: "..." }
-        setCategories(res.data?.data || []);
+        setLoading(true);
+        setError(null);
+        console.log('📡 Fetching categories for menu...');
+        
+        const response = await categoriesAPI.getAll();
+        console.log('📊 Categories API response:', response.data);
+        
+        const categoriesData = response.data?.data || response.data || [];
+        
+        console.log('📋 Categories data:', categoriesData);
+        setCategories(categoriesData);
+        
+        if (categoriesData.length === 0) {
+          console.warn('⚠️ No categories found');
+        }
       } catch (error) {
-        console.error('Error fetching categories:', error);
+        console.error('❌ Error fetching categories:', error);
+        setError(error.message);
         setCategories([]);
+      } finally {
+        setLoading(false);
       }
     };
+
     fetchCategories();
   }, []);
 
@@ -49,6 +67,39 @@ const CategoryMenu = ({ isScrolled }) => {
     navigate(`/products?subcat=${sub.id_DanhMucChiTiet}`);
     setOpen(false); setOpenSub(null);
   };
+
+  // ✅ Hiển thị loading state
+  if (loading) {
+    return (
+      <nav className={`${styles.menuWrap} ${styles.loading}`}>
+        <div className={styles.menuContainer}>
+          <div className={styles.loadingText}>Đang tải danh mục...</div>
+        </div>
+      </nav>
+    );
+  }
+
+  // ✅ Hiển thị error state  
+  if (error) {
+    return (
+      <nav className={styles.menuWrap}>
+        <div className={styles.menuContainer}>
+          <div className={styles.errorText}>Lỗi tải danh mục: {error}</div>
+        </div>
+      </nav>
+    );
+  }
+
+  // ✅ Hiển thị empty state
+  if (categories.length === 0) {
+    return (
+      <nav className={styles.menuWrap}>
+        <div className={styles.menuContainer}>
+          <div className={styles.emptyText}>Không có danh mục nào</div>
+        </div>
+      </nav>
+    );
+  }
 
   // Hamburger icon SVG
   const Hamburger = (

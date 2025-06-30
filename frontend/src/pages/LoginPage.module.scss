@@ -1,0 +1,146 @@
+.loginContainer {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #fce4ec 0%, #f8bbd9 50%, #e91e63 100%);
+  padding: 20px;
+}
+
+.loginPaper {
+  padding: 40px;
+  border-radius: 16px !important;
+  box-shadow: 0 20px 40px rgba(233, 30, 99, 0.15) !important;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  width: 100%;
+  max-width: 450px;
+}
+
+.loginHeader {
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.title {
+  color: #e91e63 !important;
+  font-weight: 700 !important;
+  margin-bottom: 8px !important;
+}
+
+.subtitle {
+  color: #666 !important;
+  font-size: 0.95rem !important;
+}
+
+.alert {
+  margin-bottom: 20px !important;
+  border-radius: 8px !important;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.textField {
+  .MuiOutlinedInput-root {
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.9);
+    
+    &:hover .MuiOutlinedInput-notchedOutline {
+      border-color: #e91e63;
+    }
+    
+    &.Mui-focused .MuiOutlinedInput-notchedOutline {
+      border-color: #e91e63;
+      border-width: 2px;
+    }
+  }
+  
+  .MuiInputLabel-root.Mui-focused {
+    color: #e91e63;
+  }
+}
+
+.submitButton {
+  background: linear-gradient(45deg, #e91e63, #f06292) !important;
+  color: white !important;
+  padding: 12px !important;
+  border-radius: 12px !important;
+  font-weight: 600 !important;
+  font-size: 1rem !important;
+  text-transform: none !important;
+  margin-top: 8px !important;
+  
+  &:hover {
+    background: linear-gradient(45deg, #ad1457, #e91e63) !important;
+    transform: translateY(-1px);
+    box-shadow: 0 8px 20px rgba(233, 30, 99, 0.3) !important;
+  }
+  
+  &:disabled {
+    background: #ccc !important;
+    color: #666 !important;
+  }
+}
+
+.loginFooter {
+  text-align: center;
+  margin-top: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.linkText {
+  color: #666 !important;
+  font-size: 0.9rem !important;
+}
+
+.link {
+  color: #e91e63 !important;
+  text-decoration: none !important;
+  font-weight: 600 !important;
+  
+  &:hover {
+    text-decoration: underline !important;
+  }
+}
+
+.demoAccount {
+  margin-top: 24px;
+  padding: 16px;
+  background: rgba(233, 30, 99, 0.05);
+  border-radius: 12px;
+  border-left: 4px solid #e91e63;
+}
+
+.demoTitle {
+  font-weight: 600 !important;
+  color: #e91e63 !important;
+  margin-bottom: 8px !important;
+}
+
+.demoInfo {
+  color: #666 !important;
+  font-size: 0.85rem !important;
+  font-family: 'Courier New', monospace !important;
+  line-height: 1.6 !important;
+}
+
+// Responsive design
+@media (max-width: 600px) {
+  .loginContainer {
+    padding: 16px;
+  }
+  
+  .loginPaper {
+    padding: 24px;
+  }
+  
+  .title {
+    font-size: 1.8rem !important;
+  }
+} 

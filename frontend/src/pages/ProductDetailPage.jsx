@@ -45,17 +45,15 @@ const formatGia = (gia) => {
 // Helper function để tạo URL hình ảnh từ backend
 const formatImageUrl = (hinhAnh) => {
   if (!hinhAnh) return '/no-image.svg';
-  
-  // Nếu đã có full URL thì return luôn
   if (hinhAnh.startsWith('http')) return hinhAnh;
   
   // Nếu có đường dẫn relative thì thêm backend URL
   if (hinhAnh.startsWith('/')) {
-    return `http://localhost:5000${hinhAnh}`;
+    return `http://localhost:5002${hinhAnh}`;
   }
   
   // Fallback cho trường hợp khác
-  return `http://localhost:5000/images/products/${hinhAnh}`;
+  return `http://localhost:5002/images/products/${hinhAnh}`;
 };
 
 // ProductDetailPage: Trang chi tiết sản phẩm

@@ -23,9 +23,25 @@ const adminRoutes = require('./routes/admin/index');
 const app = express();
 
 // Middleware
-app.use(cors());
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(cors({
+  origin: ['http://localhost:3000', 'http://localhost:5173', 'http://localhost:5174'],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
+
+// Add request logging middleware
+app.use((req, res, next) => {
+  console.log(`📨 ${req.method} ${req.url}`);
+  if (req.body && Object.keys(req.body).length > 0) {
+    console.log('📦 Body:', JSON.stringify(req.body, null, 2));
+  }
+  next();
+});
+
+// Body parsing middleware
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 // Serve static files (images)
 app.use('/public', express.static(path.join(__dirname, 'public')));
@@ -104,13 +120,46 @@ app.use('/api/dashboard', dashboardRoutes);
 // Admin routes
 app.use('/api/admin', adminRoutes);
 
-// Error handling middleware
+// ===== HEALTH CHECK =====
+app.get('/api/health', (req, res) => {
+  res.json({ 
+    status: 'OK', 
+    message: 'Server is running',
+    timestamp: new Date().toISOString()
+  });
+});
+
+// ===== ROOT ROUTE =====
+app.get('/', (req, res) => {
+  res.json({ 
+    message: 'HoaShop API Server', 
+    version: '1.0.0',
+    endpoints: {
+      health: '/api/health',
+      products: '/api/products',
+      categories: '/api/categories',
+      orders: '/api/orders'
+    }
+  });
+});
+
+// ===== ERROR HANDLING =====
+// 404 handler
+app.use((req, res) => {
+  console.log(`❌ 404 - Route not found: ${req.method} ${req.url}`);
+  res.status(404).json({ 
+    error: 'Route not found',
+    method: req.method,
+    url: req.url
+  });
+});
+
+// Global error handler
 app.use((err, req, res, next) => {
-  console.error('Error:', err);
-  res.status(500).json({
-    success: false,
-    message: 'Internal Server Error',
-    error: process.env.NODE_ENV === 'development' ? err.message : 'Something went wrong'
+  console.error('🚨 Global Error:', err);
+  res.status(500).json({ 
+    error: 'Internal server error',
+    message: err.message
   });
 });
 
@@ -134,4 +183,6 @@ app.listen(PORT, async () => {
     console.error('❌ Không thể kết nối MySQL:', error.message);
     console.log('⚠️ Server vẫn chạy nhưng không có database connection');
   }
-}); 
+});
+
+module.exports = app; 

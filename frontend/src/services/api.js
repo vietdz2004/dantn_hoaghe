@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // Base URL configuration
-const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5002/api';
 
 // Create axios instance with default configuration
 const api = axios.create({
@@ -131,6 +131,9 @@ export const customersAPI = {
 export const categoriesAPI = {
   getAll: () => api.get('/categories'),
 
+  // Lấy categories với subcategories có sản phẩm (cho navigation menu)
+  getAllWithProducts: () => api.get('/categories/with-products'),
+
   getById: (id) => api.get(`/categories/${id}`),
 
   create: (data) => api.post('/categories', data),
@@ -155,19 +158,19 @@ export const dashboardAPI = {
 
 // ====== AUTH API ======
 export const authAPI = {
-  login: (credentials) => api.post('/auth/login', credentials),
+  login: (credentials) => api.post('/users/auth/login', credentials),
 
-  register: (userData) => api.post('/auth/register', userData),
+  register: (userData) => api.post('/users/auth/register', userData),
 
-  logout: () => api.post('/auth/logout'),
+  logout: () => api.post('/users/auth/logout'),
 
-  refreshToken: () => api.post('/auth/refresh'),
+  verifyToken: () => api.get('/users/auth/verify'),
 
-  forgotPassword: (email) => api.post('/auth/forgot-password', { email }),
+  updateProfile: (userData) => api.put('/users/auth/profile', userData),
 
-  resetPassword: (token, password) => api.post('/auth/reset-password', { token, password }),
+  forgotPassword: (email) => api.post('/users/auth/forgot-password', { email }),
 
-  verifyToken: () => api.get('/auth/verify')
+  resetPassword: (token, password) => api.post('/users/auth/reset-password', { token, password })
 };
 
 // ====== LEGACY SUPPORT - Giữ lại để tương thích ngược ======

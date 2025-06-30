@@ -2,6 +2,8 @@ import React from 'react';
 import { Routes, Route } from 'react-router-dom';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
 import { CssBaseline } from '@mui/material';
+import { CartProvider } from './contexts/CartContext';
+import { AuthProvider } from './contexts/AuthContext';
 import MainLayout from './layouts/MainLayout';
 import HomePage from './pages/HomePage';
 import ProductPage from './pages/ProductPage';
@@ -9,7 +11,9 @@ import ProductDetailPage from './pages/ProductDetailPage';
 import CategoryPage from './pages/CategoryPage';
 import OrderPage from './pages/OrderPage';
 import UserPage from './pages/UserPage';
-import QuickOrderTest from './components/QuickOrderTest';
+import CartPage from './pages/CartPage';
+import LoginPage from './pages/LoginPage';
+import RegisterPage from './pages/RegisterPage';
 import './App.scss';
 
 // Tạo theme Material-UI với màu hồng chính
@@ -29,18 +33,31 @@ function App() {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <MainLayout>
-        <Routes>
-          {/* Main Frontend Routes */}
-          <Route path="/" element={<HomePage />} />
-          <Route path="/products" element={<ProductPage />} />
-          <Route path="/products/:id" element={<ProductDetailPage />} />
-          <Route path="/category/:categoryId" element={<CategoryPage />} />
-          <Route path="/orders" element={<OrderPage />} />
-          <Route path="/users" element={<UserPage />} />
-          <Route path="/quick-order-test" element={<QuickOrderTest />} />
-        </Routes>
-      </MainLayout>
+      <AuthProvider>
+        <CartProvider>
+          <Routes>
+            {/* Auth Routes - Without Layout */}
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/register" element={<RegisterPage />} />
+            
+            {/* Main Routes - With Layout */}
+            <Route path="/*" element={
+              <MainLayout>
+                <Routes>
+                  <Route path="/" element={<HomePage />} />
+                  <Route path="/products" element={<ProductPage />} />
+                  <Route path="/products/:id" element={<ProductDetailPage />} />
+                  <Route path="/category/:categoryId" element={<CategoryPage />} />
+                  <Route path="/orders" element={<OrderPage />} />
+                  <Route path="/users" element={<UserPage />} />
+                  <Route path="/profile" element={<UserPage />} />
+                  <Route path="/cart" element={<CartPage />} />
+                </Routes>
+              </MainLayout>
+            } />
+          </Routes>
+        </CartProvider>
+      </AuthProvider>
     </ThemeProvider>
   );
 }

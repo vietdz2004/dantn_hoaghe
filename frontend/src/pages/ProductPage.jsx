@@ -137,10 +137,17 @@ const ProductPage = () => {
 
   const fetchCategories = async () => {
     try {
+      console.log('Fetching categories for ProductPage...');
       const response = await categoriesAPI.getAll();
-      setCategories(response.data);
+      console.log('Categories API response:', response.data);
+      
+      // Fix: API trả về { success: true, data: categories, message: "..." }
+      const categoriesData = response.data?.data || [];
+      setCategories(categoriesData);
+      console.log('Categories set:', categoriesData.length, 'items');
     } catch (err) {
       console.error('Error fetching categories:', err);
+      setCategories([]); // Ensure empty array on error
     }
   };
 

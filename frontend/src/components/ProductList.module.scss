@@ -1,5 +1,14 @@
 .gridContainer {
   padding: 30px 0;
+  
+  // Mobile padding
+  @media (max-width: 768px) {
+    padding: 20px 0;
+  }
+  
+  @media (max-width: 480px) {
+    padding: 16px 0;
+  }
 }
 
 .productsGrid {
@@ -15,18 +24,29 @@
   
   @media (max-width: 768px) {
     grid-template-columns: repeat(2, 1fr);
-    gap: 16px;
+    gap: 12px; // Giảm gap cho 2 cột mobile
+  }
+  
+  @media (max-width: 600px) {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
   }
   
   @media (max-width: 480px) {
-    grid-template-columns: 1fr;
-    gap: 12px;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
   }
 }
 
 .gridItem {
   display: flex;
   height: 420px;
+  
+  // Mobile touch improvements
+  @media (max-width: 768px) {
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+  }
 }
 
 .card {
@@ -42,10 +62,12 @@
   display: flex;
   flex-direction: column;
   position: relative;
+  z-index: 1;
   
   &:hover {
     transform: translateY(-4px);
-    box-shadow: none;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    z-index: 3;
     
     .cardImage {
       transform: scale(1.02);
@@ -58,6 +80,14 @@
     
     .productName {
       color: #ff69b4;
+    }
+  }
+  
+  // Mobile touch feedback for cards
+  @media (max-width: 768px) {
+    &:active {
+      transform: translateY(-2px) scale(0.98);
+      transition: transform 0.1s ease;
     }
   }
 }
@@ -74,11 +104,20 @@
   justify-content: center;
   border: none;
   transition: all 0.3s ease;
+  cursor: pointer;
   
-  .card:hover & {
+  &:hover {
     border: 1px solid rgba(255, 105, 180, 0.3);
     background: white;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+  
+  // Mobile touch feedback
+  @media (max-width: 768px) {
+    &:active {
+      transform: scale(0.98);
+      transition: transform 0.1s ease;
+    }
   }
 }
 
@@ -94,15 +133,23 @@
   position: absolute;
   top: 10px;
   right: 10px;
-  z-index: 10;
+  z-index: 2;
   font-weight: 700;
   font-size: 0.75rem;
-  background: linear-gradient(135deg, #ff1493, #dc143c) !important;
-  color: white !important;
-  box-shadow: none;
+  background: linear-gradient(135deg, #ff1493, #dc143c);
+  color: white;
   padding: 4px 8px;
   border-radius: 8px;
   text-transform: uppercase;
+  border: none;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  pointer-events: none; // Không block click events
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 40px;
+  white-space: nowrap;
 }
 
 .cardContent {
@@ -273,6 +320,7 @@
 @media (max-width: 768px) {
   .gridItem {
     height: 360px;
+    margin-bottom: 4px; // Thêm space giữa các rows
   }
   
   .imgBox {
@@ -299,18 +347,14 @@
   }
 }
 
-@media (max-width: 480px) {
+@media (max-width: 600px) {
   .gridItem {
-    height: 340px;
+    height: 320px; // Transition size cho màn hình vừa
   }
   
   .imgBox {
-    width: 180px;
-    height: 225px;
-  }
-  
-  .cardContent {
-    padding: 8px 12px;
+    width: 160px;
+    height: 200px;
   }
   
   .productName {
@@ -318,25 +362,108 @@
     min-height: 30px;
   }
   
+  .salePrice {
+    font-size: 13px;
+  }
+  
+  .detailBtn {
+    padding: 5px 10px;
+    font-size: 10px;
+  }
+}
+
+@media (max-width: 480px) {
+  .gridItem {
+    height: 300px; // Giảm từ 340px để vừa 2 sản phẩm
+    margin-bottom: 6px; // Thêm space cho mobile
+  }
+  
+  .imgBox {
+    width: 140px; // Giảm từ 180px để vừa 2 cột
+    height: 175px; // Giảm từ 225px
+  }
+  
+  .cardContent {
+    padding: 6px 8px; // Giảm padding
+  }
+  
+  .productName {
+    font-size: 11px; // Giảm từ 12px
+    min-height: 28px; // Giảm từ 30px
+    line-height: 1.2;
+  }
+  
   .priceBlock {
     flex-direction: column;
     align-items: center;
     gap: 2px;
+    margin: 2px 0; // Giảm margin
   }
   
   .salePrice {
-    font-size: 13px;
+    font-size: 12px; // Giảm từ 13px
     order: 1;
   }
   
   .oldPrice {
-    font-size: 9px;
+    font-size: 8px; // Giảm từ 9px
     order: 2;
   }
   
   .detailBtn {
-    padding: 6px 12px;
+    padding: 4px 8px; // Giảm padding
+    font-size: 9px; // Giảm từ 10px
+    letter-spacing: 0.2px;
+    margin: 4px auto 0 auto; // Giảm margin
+  }
+  
+  .discountBadge {
+    top: 6px; // Giảm từ 10px
+    right: 6px;
+    padding: 2px 4px; // Giảm padding
+    font-size: 0.65rem; // Giảm font
+    min-width: 32px; // Giảm min-width
+    border-radius: 6px; // Giảm border-radius
+  }
+}
+
+// Responsive cho màn hình rất nhỏ (iPhone SE, etc.)
+@media (max-width: 360px) {
+  .gridItem {
+    height: 280px; // Còn nhỏ hơn nữa
+    margin-bottom: 8px; // Thêm space cho màn hình nhỏ
+  }
+  
+  .imgBox {
+    width: 120px; // Giảm thêm
+    height: 150px;
+  }
+  
+  .productName {
     font-size: 10px;
-    letter-spacing: 0.3px;
+    min-height: 26px;
+    -webkit-line-clamp: 2; // Chỉ hiển thị 2 dòng
+  }
+  
+  .salePrice {
+    font-size: 11px;
+  }
+  
+  .oldPrice {
+    font-size: 7px;
+  }
+  
+  .detailBtn {
+    padding: 3px 6px;
+    font-size: 8px;
+  }
+  
+  .discountBadge {
+    top: 4px;
+    right: 4px;
+    padding: 1px 3px;
+    font-size: 0.55rem;
+    min-width: 28px;
+    border-radius: 4px;
   }
 } 

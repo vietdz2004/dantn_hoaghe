@@ -30,7 +30,7 @@
   min-height: 100vh;
 }
 
-/* Content wrapper - optimized */
+/* Content wrapper - optimized with header compensation */
 .contentWrap {
   flex: 1;
   width: 100%;
@@ -40,6 +40,19 @@
   box-sizing: border-box;
   position: relative;
   z-index: 1;
+  transition: margin-top 0.3s cubic-bezier(0.4, 0, 0.2, 1), 
+              padding-top 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* When header is visible (not scrolled) */
+.contentWrap.headerVisible {
+  margin-top: 150px; /* Height of full header */
+}
+
+/* When scrolled - menu is sticky at top */
+.contentWrap.scrolled {
+  margin-top: 0; /* Remove margin */  
+  padding-top: 55px; /* Space for compact sticky menu */
 }
 
 /* Responsive adjustments */

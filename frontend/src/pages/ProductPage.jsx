@@ -32,6 +32,7 @@ const ProductPage = () => {
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [pageTitle, setPageTitle] = useState('Danh Sách Sản Phẩm');
   
   // Server-side data
   const [pagination, setPagination] = useState({
@@ -74,14 +75,41 @@ const ProductPage = () => {
         limit: filters.itemsPerPage
       };
 
-      // URL params từ routing
+      // URL params từ routing - Handle special filters from "Xem thêm" buttons
       const cat = searchParams.get('cat');
       const subcat = searchParams.get('subcat');
+      const category = searchParams.get('category');
+      const discount = searchParams.get('discount');
+      const popular = searchParams.get('popular');
+      const newProducts = searchParams.get('new');
+      const bestseller = searchParams.get('bestseller');
       
-      if (subcat) {
+      // Set page title based on query params
+      if (discount === 'true') {
+        setPageTitle('🔥 Sản phẩm giảm giá');
+        apiParams.discount = true;
+      } else if (popular === 'true') {
+        setPageTitle('⭐ Sản phẩm phổ biến');
+        apiParams.popular = true;
+      } else if (newProducts === 'true') {
+        setPageTitle('🆕 Sản phẩm mới');
+        apiParams.new = true;
+      } else if (bestseller === 'true') {
+        setPageTitle('🏆 Sản phẩm bán chạy');
+        apiParams.bestseller = true;
+      } else if (category) {
+        // Find category name for title
+        const categoryObj = categories.find(c => c.id_DanhMuc.toString() === category);
+        setPageTitle(categoryObj ? `🌺 ${categoryObj.tenDanhMuc}` : 'Sản phẩm theo danh mục');
+        apiParams.category = category;
+      } else if (subcat) {
+        setPageTitle('Sản phẩm theo danh mục con');
         apiParams.subcat = subcat;
       } else if (cat) {
+        setPageTitle('Sản phẩm theo danh mục');
         apiParams.category = cat;
+      } else {
+        setPageTitle('Danh Sách Sản Phẩm');
       }
 
       // Apply filters
@@ -115,11 +143,34 @@ const ProductPage = () => {
         }
       }
 
-      const response = await productsAPI.getAll(apiParams);
+      console.log('📡 Calling API with params:', apiParams);
+      let response;
+
+      // Call appropriate API based on filter type
+      if (discount === 'true') {
+        response = await productsAPI.getDiscountProducts(apiParams);
+      } else if (popular === 'true') {
+        response = await productsAPI.getPopularProducts(apiParams);
+      } else if (newProducts === 'true') {
+        response = await productsAPI.getNewProducts(apiParams);
+      } else if (bestseller === 'true') {
+        response = await productsAPI.getBestsellerProducts(apiParams);
+      } else {
+        // Default getAll for category or normal filtering
+        response = await productsAPI.getAll(apiParams);
+      }
       
-      if (response.data.success) {
-        setProducts(response.data.data);
-        setPagination(response.data.pagination);
+      console.log('📊 API Response:', response);
+      
+      if (response.data.success || response.data.data) {
+        const productsData = response.data.data || response.data || [];
+        setProducts(productsData);
+        setPagination(response.data.pagination || {
+          currentPage: 1,
+          totalPages: 1,
+          totalItems: productsData.length,
+          itemsPerPage: filters.itemsPerPage
+        });
         setStats(response.data.stats || {});
       } else {
         throw new Error('API response không thành công');
@@ -127,7 +178,7 @@ const ProductPage = () => {
       
       setError(null);
     } catch (err) {
-      console.error('Error fetching products:', err);
+      console.error('❌ Error fetching products:', err);
       setError('Không thể tải dữ liệu sản phẩm');
       setProducts([]);
     } finally {
@@ -214,7 +265,7 @@ const ProductPage = () => {
       {/* Header */}
       <Box className={styles.header}>
         <Typography variant="h4" className={styles.title}>
-          Danh Sách Sản Phẩm
+          {pageTitle}
         </Typography>
         <Typography variant="body1" color="text.secondary">
           Tìm thấy {pagination.totalItems} sản phẩm

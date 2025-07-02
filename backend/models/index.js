@@ -11,6 +11,7 @@ const OrderDetail = require('./OrderDetail');
 const Voucher = require('./Voucher');
 const Review = require('./Review');
 const QuickOrder = require('./QuickOrder');
+const Cart = require('./Cart');
 
 // Thiết lập quan hệ theo cấu trúc database
 // Category - SubCategory: 1-nhiều
@@ -41,6 +42,14 @@ OrderDetail.belongsTo(Product, { foreignKey: 'id_SanPham' });
 OrderDetail.hasOne(Review, { foreignKey: 'id_ChiTietDH' });
 Review.belongsTo(OrderDetail, { foreignKey: 'id_ChiTietDH' });
 
+// User - Cart: 1-nhiều
+User.hasMany(Cart, { foreignKey: 'id_NguoiDung' });
+Cart.belongsTo(User, { foreignKey: 'id_NguoiDung' });
+
+// Product - Cart: 1-nhiều
+Product.hasMany(Cart, { foreignKey: 'id_SanPham' });
+Cart.belongsTo(Product, { foreignKey: 'id_SanPham' });
+
 // Export tất cả models và sequelize
 module.exports = { 
   sequelize, 
@@ -52,5 +61,6 @@ module.exports = {
   OrderDetail, 
   Voucher, 
   Review,
-  QuickOrder
+  QuickOrder,
+  Cart
 }; 

@@ -1,146 +1,220 @@
 .loginContainer {
-  min-height: 100vh;
   display: flex;
-  align-items: center;
-  justify-content: center;
-  background: linear-gradient(135deg, #fce4ec 0%, #f8bbd9 50%, #e91e63 100%);
-  padding: 20px;
+  min-height: calc(100vh - 280px);
+  background: white;
+  margin: 0;
+  padding: 0;
+  font-family: Arial, sans-serif;
 }
 
-.loginPaper {
-  padding: 40px;
-  border-radius: 16px !important;
-  box-shadow: 0 20px 40px rgba(233, 30, 99, 0.15) !important;
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(10px);
-  width: 100%;
-  max-width: 450px;
+.mainContent {
+  flex: 1;
+  display: flex;
+  background: white;
 }
 
-.loginHeader {
-  text-align: center;
-  margin-bottom: 32px;
+.leftColumn {
+  width: 300px;
+  padding: 30px 25px;
+  background: #f4f4f4;
+  border-right: 1px solid #ddd;
 }
 
-.title {
-  color: #e91e63 !important;
-  font-weight: 700 !important;
-  margin-bottom: 8px !important;
+.rightColumn {
+  flex: 1;
+  padding: 30px 25px;
+  background: white;
+  border-right: 1px solid #ddd;
 }
 
-.subtitle {
+.sidebar {
+  width: 200px;
+  background: white;
+  padding: 30px 20px;
+}
+
+.sectionTitle {
+  font-size: 1.2rem !important;
+  font-weight: 600 !important;
+  color: #333 !important;
+  margin-bottom: 15px !important;
+  font-family: Arial, sans-serif !important;
+}
+
+.sectionDescription {
   color: #666 !important;
-  font-size: 0.95rem !important;
+  font-size: 0.85rem !important;
+  line-height: 1.5;
+  margin-bottom: 25px !important;
+  font-family: Arial, sans-serif !important;
 }
 
-.alert {
-  margin-bottom: 20px !important;
-  border-radius: 8px !important;
+.continueButton {
+  background: #e91e63 !important;
+  color: white !important;
+  padding: 8px 20px !important;
+  border-radius: 3px !important;
+  font-weight: 600 !important;
+  text-transform: none !important;
+  font-size: 0.9rem !important;
+  
+  &:hover {
+    background: #d81159 !important;
+  }
+}
+
+.formTitle {
+  font-size: 1.1rem !important;
+  font-weight: 600 !important;
+  color: #333 !important;
+  margin-bottom: 15px !important;
+  font-family: Arial, sans-serif !important;
+}
+
+.formSubtitle {
+  color: #666 !important;
+  font-size: 0.85rem !important;
+  margin-bottom: 15px !important;
+  font-family: Arial, sans-serif !important;
 }
 
 .form {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 15px;
 }
 
 .textField {
   .MuiOutlinedInput-root {
-    border-radius: 12px;
-    background: rgba(255, 255, 255, 0.9);
+    border-radius: 3px;
+    background: #f8f8f8;
+    font-size: 0.9rem;
+    
+    .MuiOutlinedInput-notchedOutline {
+      border-color: #ddd;
+    }
     
     &:hover .MuiOutlinedInput-notchedOutline {
-      border-color: #e91e63;
+      border-color: #bbb;
     }
     
     &.Mui-focused .MuiOutlinedInput-notchedOutline {
       border-color: #e91e63;
-      border-width: 2px;
+      border-width: 1px;
     }
   }
   
-  .MuiInputLabel-root.Mui-focused {
-    color: #e91e63;
+  .MuiInputLabel-root {
+    font-size: 0.9rem;
+    color: #666;
+    
+    &.Mui-focused {
+      color: #e91e63;
+    }
+  }
+  
+  .MuiInputBase-input {
+    padding: 12px 14px;
+    font-size: 0.9rem;
   }
 }
 
 .submitButton {
-  background: linear-gradient(45deg, #e91e63, #f06292) !important;
+  background: #e91e63 !important;
   color: white !important;
-  padding: 12px !important;
-  border-radius: 12px !important;
+  padding: 10px 25px !important;
+  border-radius: 3px !important;
   font-weight: 600 !important;
-  font-size: 1rem !important;
   text-transform: none !important;
-  margin-top: 8px !important;
+  font-size: 0.9rem !important;
+  margin-top: 10px !important;
   
   &:hover {
-    background: linear-gradient(45deg, #ad1457, #e91e63) !important;
-    transform: translateY(-1px);
-    box-shadow: 0 8px 20px rgba(233, 30, 99, 0.3) !important;
-  }
-  
-  &:disabled {
-    background: #ccc !important;
-    color: #666 !important;
+    background: #d81159 !important;
   }
 }
 
-.loginFooter {
-  text-align: center;
-  margin-top: 24px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.linkText {
-  color: #666 !important;
-  font-size: 0.9rem !important;
-}
-
-.link {
+.forgotPassword {
   color: #e91e63 !important;
   text-decoration: none !important;
-  font-weight: 600 !important;
+  font-size: 0.85rem !important;
+  margin-top: 8px !important;
+  display: inline-block;
+  font-family: Arial, sans-serif !important;
   
   &:hover {
     text-decoration: underline !important;
   }
 }
 
-.demoAccount {
-  margin-top: 24px;
-  padding: 16px;
-  background: rgba(233, 30, 99, 0.05);
-  border-radius: 12px;
-  border-left: 4px solid #e91e63;
-}
-
-.demoTitle {
-  font-weight: 600 !important;
+.link {
   color: #e91e63 !important;
-  margin-bottom: 8px !important;
+  text-decoration: none !important;
+  font-weight: 500 !important;
+  
+  &:hover {
+    text-decoration: underline !important;
+  }
 }
 
-.demoInfo {
+.alert {
+  margin-bottom: 15px !important;
+  border-radius: 3px !important;
+  font-size: 0.9rem !important;
+}
+
+// Sidebar styles
+.sidebarTitle {
+  font-size: 1rem !important;
+  font-weight: 600 !important;
+  color: #333 !important;
+  margin-bottom: 15px !important;
+  font-family: Arial, sans-serif !important;
+}
+
+.sidebarLink {
+  display: block;
+  padding: 8px 0;
   color: #666 !important;
+  text-decoration: none !important;
   font-size: 0.85rem !important;
-  font-family: 'Courier New', monospace !important;
-  line-height: 1.6 !important;
+  border-bottom: 1px solid #eee;
+  font-family: Arial, sans-serif !important;
+  
+  &:hover {
+    color: #e91e63 !important;
+  }
+  
+  &:last-child {
+    border-bottom: none;
+  }
 }
 
-// Responsive design
-@media (max-width: 600px) {
+// Responsive
+@media (max-width: 1024px) {
+  .sidebar {
+    width: 200px;
+    padding: 20px 15px;
+  }
+}
+
+@media (max-width: 768px) {
   .loginContainer {
-    padding: 16px;
+    flex-direction: column;
   }
   
-  .loginPaper {
-    padding: 24px;
+  .mainContent {
+    flex-direction: column;
   }
   
-  .title {
-    font-size: 1.8rem !important;
+  .leftColumn,
+  .rightColumn {
+    padding: 20px;
+  }
+  
+  .sidebar {
+    width: 100%;
+    order: -1;
+    padding: 20px;
   }
 } 

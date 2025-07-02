@@ -1,22 +1,71 @@
-/* CategoryMenu.module.css */
+@use "sass:map";
 
+/* === DESIGN SYSTEM === */
+$primary: #e91e63;
+$secondary: #f06292;
+$accent: #fce4ec;
+$text-dark: #1a202c;
+$text-medium: #4a5568;
+$text-light: #a0aec0;
+$border: #e2e8f0;
+$white: #ffffff;
+
+$space: (
+  xs: 4px,
+  sm: 8px,
+  md: 16px,
+  lg: 24px,
+  xl: 32px
+);
+
+$text: (
+  xs: 0.75rem,
+  sm: 0.875rem,
+  base: 1rem,
+  lg: 1.125rem,
+  xl: 1.25rem
+);
+
+$radius: (
+  sm: 6px,
+  md: 8px,
+  lg: 12px
+);
+
+$shadow: (
+  sm: 0 1px 3px 0 rgba(0, 0, 0, 0.1),
+  md: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
+  lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1)
+);
+
+/* === BASE MENU === */
 .menuWrap {
-  background: #fff;
-  border-top: 3px solid #f8bbd0;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
-  position: sticky;
-  top: 0;
-  z-index: 1400;
+  background: $white;
+  border-top: 2px solid $accent;
+  box-shadow: map.get($shadow, sm);
+  position: relative;
+  z-index: 100;
   transition: all 0.3s ease;
-  width: 100%;
-  will-change: box-shadow, border-top;
+  
+  &.compact {
+    .menuContainer {
+      padding: 0 map.get($space, md);
+    }
+    
+    .menuBtn {
+      padding: map.get($space, sm) map.get($space, md);
+      font-size: map.get($text, sm);
+    }
+  }
 }
 
 .menuContainer {
-  max-width: 1180px;
+  max-width: 1200px;
   margin: 0 auto;
+  padding: 0 map.get($space, lg);
 }
 
+/* === DESKTOP MENU === */
 .menuList {
   display: flex;
   list-style: none;
@@ -24,6 +73,7 @@
   padding: 0;
   justify-content: center;
   flex-wrap: wrap;
+  gap: map.get($space, sm);
 }
 
 .menuItem {
@@ -33,66 +83,42 @@
 }
 
 .menuBtn {
-  display: block;
-  padding: 12px 20px;
-  color: #444;
+  padding: map.get($space, md) map.get($space, lg);
+  color: $text-dark;
   text-decoration: none;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-  font-weight: 500;
-  font-size: 15px;
-  text-transform: uppercase;
-  letter-spacing: 1px;
+  font-weight: 600;
+  font-size: map.get($text, base);
   cursor: pointer;
   transition: all 0.2s ease;
-  border-bottom: 3px solid transparent;
-  background: transparent;
-  border-radius: 8px 8px 0 0;
-  user-select: none;
+  border-radius: map.get($radius, md);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  
+  &:hover {
+    background: $accent;
+    color: $primary;
+  }
 }
 
-.menuWrap.scrolled {
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
-  border-top: 3px solid #e91e63;
-  background: #fff;
-  z-index: 1400;
-}
 
-.scrolled .menuBtn {
-  padding: 10px 20px;
-  font-size: 14px;
-  font-weight: 600;
-}
 
-.menuBtn:hover, .menuItem.active .menuBtn {
-  background: #f8f9fa;
-  color: #e91e63;
-  border-bottom: 3px solid #e91e63;
-}
-
-.menuItem:hover .menuBtn {
-  background: #f8f9fa;
-  color: #e91e63;
-  border-bottom: 3px solid #e91e63;
-}
-
-/* Submenu Styles */
 .subMenu {
   position: absolute;
   top: 100%;
   left: 50%;
   transform: translateX(-50%) translateY(-10px);
-  background: #fff;
-  min-width: 220px;
-  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
-  border-radius: 0 0 8px 8px;
+  background: $white;
+  min-width: 200px;
+  box-shadow: map.get($shadow, lg);
+  border-radius: map.get($radius, lg);
   list-style: none;
   margin: 0;
-  padding: 8px 0;
+  padding: map.get($space, sm) 0;
   opacity: 0;
   visibility: hidden;
   transition: all 0.3s ease;
   z-index: 1000;
-  border-top: 2px solid #e91e63;
+  border-top: 2px solid $primary;
 }
 
 .menuItem:hover .subMenu {
@@ -102,547 +128,310 @@
 }
 
 .subMenuItem {
-  padding: 0;
-  margin: 0;
+  padding: map.get($space, sm) map.get($space, lg);
   cursor: pointer;
   transition: all 0.2s ease;
-  color: #333;
-  font-size: 13px;
-  font-weight: 400;
-  padding: 10px 20px;
-  border-bottom: 1px solid #f0f0f0;
-  position: relative;
-}
-
-.subMenuItem:last-child {
-  border-bottom: none;
-}
-
-.subMenuItem:hover {
-  background: #f8f9fa;
-  color: #e91e63;
-  padding-left: 25px;
-}
-
-.subMenuItem:hover::before {
-  content: '→';
-  position: absolute;
-  left: 12px;
-  color: #e91e63;
-  font-weight: bold;
-}
-
-/* Active/Selected States */
-.menuItem.active .menuBtn {
-  background: rgba(255, 255, 255, 0.15);
-  border-bottom-color: #e91e63;
-  color: #e91e63;
-}
-
-/* Hover Effects for Better UX */
-.menuItem:hover .subMenu::before {
-  content: '';
-  position: absolute;
-  top: -6px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 0;
-  height: 0;
-  border-left: 6px solid transparent;
-  border-right: 6px solid transparent;
-  border-bottom: 6px solid #e91e63;
-}
-
-/* Responsive Design */
-@media (max-width: 1024px) {
-  .menuList {
-    justify-content: flex-start;
-    overflow-x: auto;
-    overflow-y: hidden;
-    scrollbar-width: none;
-    -ms-overflow-style: none;
-  }
+  color: $text-medium;
+  font-size: map.get($text, sm);
   
-  .menuList::-webkit-scrollbar {
-    display: none;
-  }
-  
-  .menuBtn {
-    padding: 14px 18px;
-    font-size: 15px;
-  }
-  
-  .subMenu {
-    min-width: 200px;
-    left: 50%;
-    transform: translateX(-50%) translateY(-10px);
-  }
-  
-  .menuItem:hover .subMenu {
-    transform: translateX(-50%) translateY(0);
-  }
-  
-  .menuItem:first-child .subMenu {
-    left: 0;
-    transform: translateX(0) translateY(-10px);
-  }
-  
-  .menuItem:first-child:hover .subMenu {
-    transform: translateX(0) translateY(0);
-  }
-  
-  .menuItem:last-child .subMenu {
-    left: auto;
-    right: 0;
-    transform: translateX(0) translateY(-10px);
-  }
-  
-  .menuItem:last-child:hover .subMenu {
-    transform: translateX(0) translateY(0);
+  &:hover {
+    background: $accent;
+    color: $primary;
+    padding-left: map.get($space, xl);
   }
 }
 
-@media (max-width: 768px) {
-  .menuWrap {
-    background: #fff;
-    border-top: 2px solid #f8bbd0;
-    box-shadow: 0 2px 12px rgba(233,30,99,0.08);
-    border-radius: 0 0 18px 18px;
-  }
-  
-  .menuList {
-    flex-direction: column;
-    position: relative;
-    box-shadow: 0 2px 12px rgba(233,30,99,0.08);
-    border-radius: 0 0 18px 18px;
-    background: #fff;
-    padding: 8px 0;
-  }
-  
-  .menuItem {
-    width: 100%;
-    border-bottom: 1px solid #f8bbd0;
-  }
-  
-  .menuItem:last-child {
-    border-bottom: none;
-  }
-  
-  .menuBtn {
-    padding: 18px 24px;
-    text-align: left;
-    width: 100%;
-    border-bottom: none;
-    position: relative;
-    font-size: 18px;
-    color: #444;
-    border-radius: 12px;
-    background: #fff;
-    margin: 4px 0;
-    box-shadow: 0 2px 8px rgba(233,30,99,0.06);
-  }
-  
-  .menuBtn:hover, .menuItem.active .menuBtn {
-    background: #fce4ec;
-    color: #e91e63;
-    border-bottom: none;
-    box-shadow: 0 4px 16px rgba(233,30,99,0.10);
-  }
-  
-  .subMenu {
-    position: static;
-    opacity: 1;
-    visibility: visible;
-    transform: none;
-    box-shadow: none;
-    background: rgba(255, 255, 255, 0.05);
-    border-radius: 0;
-    border-top: none;
-    border-left: 3px solid #e91e63;
-    margin: 0;
-    max-height: 0;
-    overflow: hidden;
-    transition: max-height 0.3s ease;
-  }
-  
-  .menuItem:hover .subMenu {
-    max-height: 300px;
-  }
-  
-  .subMenuItem {
-    color: rgba(255, 255, 255, 0.9);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    padding: 12px 30px;
-  }
-  
-  .subMenuItem:hover {
-    background: rgba(255, 255, 255, 0.1);
-    color: #e91e63;
-    padding-left: 35px;
-  }
-}
-
-@media (max-width: 480px) {
-  .menuBtn {
-    padding: 14px 12px;
-    font-size: 16px;
-  }
-  
-  .subMenuItem {
-    padding: 10px 25px;
-    font-size: 12px;
-  }
-  
-  .subMenuItem:hover {
-    padding-left: 30px;
-  }
-}
-
-/* Loading State */
-.menuWrap.loading {
-  background: #2c5530;
-  min-height: 50px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.menuWrap.loading::after {
-  content: 'Đang tải danh mục...';
-  color: rgba(255, 255, 255, 0.7);
-  font-size: 14px;
-}
-
-/* Accessibility */
-.menuBtn:focus,
-.subMenuItem:focus {
-  outline: 2px solid #e91e63;
-  outline-offset: -2px;
-}
-
-/* Animation for smooth transitions */
-@keyframes slideDown {
-  from {
-    opacity: 0;
-    transform: translateY(-10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.subMenu {
-  animation: slideDown 0.3s ease when visibility changes to visible;
-}
-
+/* === MOBILE MENU === */
 .hamburgerOnly {
   display: none;
 }
+
+.hamburgerBtn {
+  background: none;
+  border: none;
+  padding: map.get($space, sm);
+  cursor: pointer;
+  border-radius: map.get($radius, md);
+  transition: background 0.2s ease;
+  
+  &:hover {
+    background: $accent;
+  }
+  
+  svg {
+    width: 24px;
+    height: 24px;
+    
+    rect {
+      fill: $primary;
+      transition: all 0.3s ease;
+    }
+  }
+}
+
 .menuOverlay {
   display: none;
-}
-@media (max-width: 768px) {
-  .hamburgerOnly {
-    display: flex;
-    justify-content: flex-start;
-    align-items: center;
-    padding: 12px 0 0 12px;
-    z-index: 1200;
-  }
-  .menuOverlay {
-    display: block;
-    position: fixed;
-    top: 0; left: 0; right: 0; bottom: 0;
-    background: rgba(255,255,255,0.92);
-    z-index: 1100;
-    transition: background 0.2s;
-  }
-  .menuList {
-    display: none;
-    position: fixed;
-    top: 0; right: 0;
-    width: 90vw;
-    max-width: 420px;
-    height: 100vh;
-    background: #fff;
-    box-shadow: -2px 0 32px rgba(233,30,99,0.13);
-    border-radius: 24px 0 0 24px;
-    flex-direction: column;
-    padding: 48px 0 0 0;
-    transition: transform 0.28s cubic-bezier(.4,0,.2,1);
-    transform: translateX(100%);
-    z-index: 1201;
-    align-items: flex-end;
-  }
-  .menuListOpen {
-    display: flex;
-    transform: translateX(0);
-  }
-  .menuBtn {
-    padding: 22px 32px 22px 24px;
-    text-align: right;
-    width: 100%;
-    font-size: 22px;
-    color: #222;
-    border-radius: 18px;
-    background: #fff;
-    margin: 8px 0;
-    box-shadow: 0 2px 12px rgba(233,30,99,0.06);
-    font-weight: 700;
-    letter-spacing: 1px;
-  }
-  .menuBtn:hover, .menuItem.active .menuBtn {
-    background: #fce4ec;
-    color: #e91e63;
-    border-bottom: none;
-    box-shadow: 0 4px 24px rgba(233,30,99,0.13);
-  }
-  .subMenu {
-    position: static;
-    opacity: 1;
-    visibility: visible;
-    transform: none;
-    box-shadow: none;
-    background: #fff;
-    border-radius: 0 0 18px 18px;
-    margin: 0 0 0 0;
-    min-width: 0;
-    padding: 0 0 0 24px;
-    border-left: 3px solid #e91e63;
-    max-height: 400px;
-    overflow-y: auto;
-    transition: max-height 0.3s;
-  }
-  .subMenuItem {
-    color: #e91e63;
-    font-size: 18px;
-    font-weight: 500;
-    padding: 14px 0 14px 12px;
-    border-bottom: 1px solid #f8bbd0;
-    background: none;
-    border-radius: 0;
-    margin: 0;
-  }
-  .subMenuItem:hover {
-    background: #f8bbd0;
-    color: #ad1457;
-    padding-left: 24px;
-  }
-  .closeBtn {
-    position: absolute;
-    top: 18px;
-    right: 18px;
-    background: none;
-    border: none;
-    font-size: 32px;
-    color: #e91e63;
-    cursor: pointer;
-    z-index: 1300;
-    padding: 4px 8px;
-    border-radius: 50%;
-    transition: background 0.18s;
-  }
-  .closeBtn:hover {
-    background: #fce4ec;
-  }
 }
 
 .menuMobilePanel {
   display: none;
 }
+
+.menuMobileHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: map.get($space, lg);
+  border-bottom: 1px solid $border;
+  background: $white;
+  border-radius: map.get($radius, lg) 0 0 0;
+}
+
+.menuMobileTitle {
+  font-size: map.get($text, lg);
+  font-weight: 700;
+  color: $primary;
+  letter-spacing: 1px;
+}
+
+.closeBtn {
+  background: none;
+  border: none;
+  font-size: 24px;
+  color: $primary;
+  cursor: pointer;
+  padding: map.get($space, sm);
+  border-radius: 50%;
+  transition: background 0.2s ease;
+  
+  &:hover {
+    background: $accent;
+  }
+}
+
+.menuMobileList {
+  list-style: none;
+  margin: 0;
+  padding: map.get($space, md) 0;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.menuMobileItem {
+  border-bottom: 1px solid $border;
+  
+  &:last-child {
+    border-bottom: none;
+  }
+}
+
+.menuMobileBtn {
+  width: 100%;
+  font-size: map.get($text, base);
+  font-weight: 600;
+  color: $text-dark;
+  padding: map.get($space, lg);
+  background: none;
+  border: none;
+  text-align: left;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  
+  &:hover {
+    background: $accent;
+    color: $primary;
+  }
+}
+
+.menuMobileSub {
+  max-height: 0;
+  overflow: hidden;
+  background: rgba($primary, 0.02);
+  transition: max-height 0.3s ease;
+  border-left: 3px solid $primary;
+  margin-left: map.get($space, lg);
+}
+
+.menuMobileSubOpen {
+  max-height: 300px;
+}
+
+.menuMobileSubItem {
+  color: $text-medium;
+  font-size: map.get($text, sm);
+  font-weight: 500;
+  padding: map.get($space, md) map.get($space, lg);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border-bottom: 1px solid rgba($primary, 0.1);
+  
+  &:last-child {
+    border-bottom: none;
+  }
+  
+  &:hover {
+    background: $accent;
+    color: $primary;
+    padding-left: map.get($space, xl);
+  }
+}
+
+
+
+/* === RESPONSIVE === */
 @media (max-width: 768px) {
+  .menuWrap {
+    padding: map.get($space, xs) 0; // Giảm padding cho gọn hơn
+  }
+  
+  .menuList {
+    display: none;
+  }
+  
+  .hamburgerOnly {
+    display: flex;
+    padding: map.get($space, sm); // Giảm từ md xuống sm
+  }
+  
+  .hamburgerBtn {
+    padding: map.get($space, xs); // Giảm padding button
+    
+    svg {
+      width: 20px; // Giảm từ 24px xuống 20px
+      height: 20px;
+    }
+  }
+  
+  .menuOverlay {
+    display: block;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 1100;
+    transition: all 0.3s ease;
+  }
+  
   .menuMobilePanel {
     display: flex;
     flex-direction: column;
     position: fixed;
-    top: 0; right: 0;
-    width: 100vw;
-    max-width: 100vw;
+    top: 0;
+    right: 0;
+    width: 85vw;
+    max-width: 300px; // Giảm từ 320px xuống 300px
     height: 100vh;
-    background: #fff;
-    box-shadow: -2px 0 32px rgba(44,85,48,0.10);
-    z-index: 1202;
+    background: $white;
+    box-shadow: -4px 0 20px rgba(0, 0, 0, 0.1);
+    border-radius: map.get($radius, lg) 0 0 map.get($radius, lg);
+    z-index: 1200;
     transform: translateX(100%);
-    transition: transform 0.32s cubic-bezier(.4,0,.2,1);
+    transition: transform 0.3s ease;
   }
+  
   .menuMobilePanelOpen {
     transform: translateX(0);
   }
+  
   .menuMobileHeader {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 18px 18px 0 18px;
-    border-bottom: 1px solid #f8bbd0;
-    background: #fff;
-    min-height: 60px;
+    padding: map.get($space, md); // Giảm từ lg xuống md
   }
+  
   .menuMobileTitle {
-    font-size: 1.2rem;
-    font-weight: 700;
-    color: #e91e63;
-    letter-spacing: 2px;
-    flex: 1;
-    text-align: left;
+    font-size: map.get($text, base); // Giảm từ lg xuống base
   }
-  .menuMobileList {
-    list-style: none;
-    margin: 0;
-    padding: 18px 0 0 0;
-    width: 100%;
-    overflow-y: auto;
-    flex: 1;
-  }
-  .menuMobileItem {
-    width: 100%;
-    border-bottom: 1px solid #f8bbd0;
-    background: none;
-  }
+  
   .menuMobileBtn {
-    width: 100%;
-    font-size: 1.18rem;
-    font-weight: 600;
-    color: #222;
-    padding: 20px 24px 20px 24px;
-    background: none;
-    border: none;
-    text-align: left;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    cursor: pointer;
-    transition: background 0.18s, color 0.18s;
-    border-radius: 0;
+    padding: map.get($space, md); // Giảm từ lg xuống md
+    font-size: map.get($text, sm); // Giảm từ base xuống sm
   }
-  .menuMobileBtn:hover {
-    background: #fce4ec;
-    color: #e91e63;
-  }
-  .menuMobileSub {
-    max-height: 0;
-    overflow: hidden;
-    background: #fff;
-    transition: max-height 0.28s cubic-bezier(.4,0,.2,1);
-    padding-left: 12px;
-    border-left: 3px solid #e91e63;
-  }
-  .menuMobileSubOpen {
-    max-height: 400px;
-    transition: max-height 0.32s cubic-bezier(.4,0,.2,1);
-  }
+  
   .menuMobileSubItem {
-    color: #e91e63;
-    font-size: 1.08rem;
-    font-weight: 500;
-    padding: 16px 0 16px 18px;
-    border-bottom: 1px solid #f8bbd0;
-    background: none;
-    border-radius: 0;
-    margin: 0;
-    cursor: pointer;
-    transition: background 0.18s, color 0.18s, padding 0.18s;
-  }
-  .menuMobileSubItem:hover {
-    background: #f8bbd0;
-    color: #ad1457;
-    padding-left: 32px;
+    padding: map.get($space, sm) map.get($space, md); // Giảm padding
+    font-size: map.get($text, xs); // Giảm từ sm xuống xs
   }
 }
 
-.navContainer {
-  background-color: #fff;
-  border-top: 1px solid #eee;
-  border-bottom: 1px solid #eee;
-  padding: 8px 0; /* Chỉ giữ padding dọc */
-  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+@media (max-width: 480px) {
+  .menuWrap {
+    padding: 2px 0; // Còn gọn hơn nữa
+  }
+  
+  .hamburgerOnly {
+    padding: map.get($space, xs); // Giảm padding hơn nữa
+  }
+  
+  .hamburgerBtn {
+    padding: 2px; // Giảm padding button
+    
+    svg {
+      width: 18px; // Giảm từ 20px xuống 18px
+      height: 18px;
+    }
+  }
+  
+  .menuMobilePanel {
+    width: 100vw;
+    max-width: 100vw;
+  }
+  
+  .menuMobileHeader {
+    padding: map.get($space, sm); // Giảm từ md xuống sm
+  }
+  
+  .menuMobileTitle {
+    font-size: map.get($text, sm); // Giảm từ base xuống sm
+  }
+  
+  .menuMobileBtn {
+    font-size: map.get($text, xs); // Giảm từ sm xuống xs
+    padding: map.get($space, sm); // Giảm từ md xuống sm
+  }
+  
+  .menuMobileSubItem {
+    padding: map.get($space, xs) map.get($space, sm); // Giảm padding hơn nữa
+    font-size: 0.7rem; // Nhỏ hơn xs
+  }
+  
+  .closeBtn {
+    padding: map.get($space, xs); // Giảm padding nút đóng
+    font-size: 18px; // Giảm từ 24px
+  }
 }
 
-.navList {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 30px;
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-
-.menuItems {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 30px;
-  list-style: none;
-  padding: 0;
-  margin: 0;
-}
-
-.navItem a:hover,
-.navItem button:hover {
-  color: var(--accent-pink);
-}
-
-/* Loading/Error States */
+/* === LOADING STATES === */
 .loading {
-  background: #fff;
+  background: $white;
   min-height: 60px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-top: 3px solid #f8bbd0;
+  border-top: 2px solid $accent;
 }
 
 .loadingText {
-  color: #e91e63;
-  font-size: 14px;
+  color: $primary;
+  font-size: map.get($text, sm);
   font-weight: 500;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.loadingText::before {
-  content: '⏳';
-  animation: spin 1s linear infinite;
 }
 
 .errorText {
   color: #d32f2f;
-  font-size: 14px;
-  padding: 12px 20px;
+  font-size: map.get($text, sm);
+  padding: map.get($space, lg);
   text-align: center;
 }
 
 .emptyText {
-  color: #666;
-  font-size: 14px;
-  padding: 12px 20px;
+  color: $text-light;
+  font-size: map.get($text, sm);
+  padding: map.get($space, lg);
   text-align: center;
   font-style: italic;
 }
 
-@keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
-
-/* Fix z-index issues */
-.menuWrap {
-  position: relative; /* ✅ Thay vì sticky nếu gây lỗi */
-  z-index: 100;
-}
-
-.menuContainer {
-  position: relative;
-  z-index: 101;
-}
-
-/* Ensure visibility */
-.menuList {
-  display: flex !important; /* ✅ Force display */
-}
-
-.menuItem {
-  display: flex !important; /* ✅ Force display */
-}

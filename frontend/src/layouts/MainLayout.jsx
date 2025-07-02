@@ -7,39 +7,42 @@ import Footer from '../components/Footer';
 const MainLayout = ({ children }) => {
   const [isScrolled, setIsScrolled] = useState(false);
 
-  // Optimize scroll handler with throttling
+  // Optimize scroll handler with requestAnimationFrame
   const handleScroll = useCallback(() => {
     const scrollY = window.scrollY;
-    const shouldScroll = scrollY > 80;
+    const shouldScroll = scrollY > 100; // Match threshold with CSS
     
     if (shouldScroll !== isScrolled) {
       setIsScrolled(shouldScroll);
     }
   }, [isScrolled]);
 
-  // Effect for handling scroll with passive listener
+  // Effect for handling scroll with RAF for smoothness
   useEffect(() => {
-    // Throttle scroll events for better performance
-    let timeoutId = null;
-    const throttledScroll = () => {
-      if (timeoutId) return;
-      timeoutId = setTimeout(() => {
-        handleScroll();
-        timeoutId = null;
-      }, 16); // ~60fps
+    let rafId = null;
+    let ticking = false;
+    
+    const onScroll = () => {
+      if (!ticking) {
+        rafId = requestAnimationFrame(() => {
+          handleScroll();
+          ticking = false;
+        });
+        ticking = true;
+      }
     };
 
-    window.addEventListener('scroll', throttledScroll, { passive: true });
+    window.addEventListener('scroll', onScroll, { passive: true });
     return () => {
-      window.removeEventListener('scroll', throttledScroll);
-      if (timeoutId) clearTimeout(timeoutId);
+      window.removeEventListener('scroll', onScroll);
+      if (rafId) cancelAnimationFrame(rafId);
     };
   }, [handleScroll]);
 
   return (
     <>
       <Header isScrolled={isScrolled} />
-      <main className={styles.contentWrap}>
+      <main className={`${styles.contentWrap} ${!isScrolled ? styles.headerVisible : styles.scrolled}`}>
         {children}
       </main>
       <Footer />

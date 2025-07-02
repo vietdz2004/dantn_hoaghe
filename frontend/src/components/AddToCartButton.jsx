@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
   Button, 
   IconButton, 
@@ -13,6 +14,7 @@ import {
   Remove as RemoveIcon
 } from '@mui/icons-material';
 import { useCart } from '../contexts/CartContext';
+import { useAuth } from '../contexts/AuthContext';
 
 const AddToCartButton = ({ 
   product, 
@@ -23,17 +25,40 @@ const AddToCartButton = ({
   className = ''
 }) => {
   const { addToCart, updateQuantity, getItemQuantity, isInCart } = useCart();
+  const { user } = useAuth();
+  const navigate = useNavigate();
   const [showAlert, setShowAlert] = useState(false);
   
   const currentQuantity = getItemQuantity(product.id_SanPham);
   const inCart = isInCart(product.id_SanPham);
 
   const handleAddToCart = () => {
+    if (!user) {
+      // Redirect to login if not authenticated
+      navigate('/login', {
+        state: {
+          returnUrl: window.location.pathname,
+          message: 'Vui lòng đăng nhập để thêm sản phẩm vào giỏ hàng'
+        }
+      });
+      return;
+    }
+    
     addToCart(product, 1);
     setShowAlert(true);
   };
 
   const handleQuantityChange = (newQuantity) => {
+    if (!user) {
+      navigate('/login', {
+        state: {
+          returnUrl: window.location.pathname,
+          message: 'Vui lòng đăng nhập để quản lý giỏ hàng'
+        }
+      });
+      return;
+    }
+    
     if (newQuantity <= 0) {
       updateQuantity(product.id_SanPham, 0);
     } else {

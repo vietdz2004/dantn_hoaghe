@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import api from '../services/api';
 import { productsAPI } from '../services/api';
 import styles from './ProductDetailPage.module.scss';
-import QuickOrderModal from '../components/QuickOrderModal';
+
 import ProductList from '../components/ProductList';
 import { 
   Box, 
@@ -16,10 +16,7 @@ import {
   IconButton,
   Snackbar,
   Alert,
-  Breadcrumbs,
-  Link,
-  Card,
-  CardContent
+  Breadcrumbs
 } from '@mui/material';
 import { 
   ShoppingCart, 
@@ -33,8 +30,11 @@ import {
   LocalFlorist,
   Category,
   Tag,
-  Inventory
+  Inventory,
+  Add
 } from '@mui/icons-material';
+import { useCart } from '../contexts/CartContext';
+import { useAuth } from '../contexts/AuthContext';
 
 // Format giá theo chuẩn Việt Nam
 const formatGia = (gia) => {
@@ -60,6 +60,8 @@ const formatImageUrl = (hinhAnh) => {
 const ProductDetailPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { addToCart } = useCart();
+  const { user } = useAuth();
   const [product, setProduct] = useState(null);
   const [reviews, setReviews] = useState([]);
   const [relatedProducts, setRelatedProducts] = useState([]);
@@ -73,7 +75,6 @@ const ProductDetailPage = () => {
   const [imageLoading, setImageLoading] = useState(true);
   const [imageError, setImageError] = useState(false);
   const [userHasPurchased, setUserHasPurchased] = useState(false);
-  const [showQuickOrderModal, setShowQuickOrderModal] = useState(false);
 
   useEffect(() => {
     const fetchProduct = async () => {
@@ -143,26 +144,47 @@ const ProductDetailPage = () => {
     checkUserPurchase();
   }, [id]);
 
-  // Handler đặt hàng
+  // Handler thêm giỏ hàng
   const handleAddToCart = () => {
-    setNotificationMessage(`Đã đặt ${quantity} sản phẩm thành công!`);
-    setShowNotification(true);
-    // TODO: Tích hợp với Redux/Context cho giỏ hàng thực tế
-  };
-
-  // Handler đặt nhanh
-  const handleOrderNow = () => {
-    setShowQuickOrderModal(true);
-  };
-
-  // Handler khi đóng modal đặt hàng nhanh
-  const handleQuickOrderClose = (success, message) => {
-    setShowQuickOrderModal(false);
-    if (success) {
-      setNotificationMessage(message || 'Đã gửi đơn hàng nhanh thành công! Chúng tôi sẽ liên hệ với bạn sớm.');
+    if (!user) {
+      navigate('/login', {
+        state: {
+          returnUrl: `/products/${id}`,
+          message: 'Vui lòng đăng nhập để thêm sản phẩm vào giỏ hàng'
+        }
+      });
+      return;
+    }
+    
+    try {
+      addToCart(product, quantity);
+      setNotificationMessage(`Đã thêm ${quantity} sản phẩm vào giỏ hàng!`);
+      setShowNotification(true);
+    } catch (error) {
+      setNotificationMessage('Có lỗi khi thêm vào giỏ hàng');
       setShowNotification(true);
     }
   };
+
+  // Handler đặt hàng
+  const handleOrder = () => {
+    if (!user) {
+      navigate('/login', {
+        state: {
+          returnUrl: `/products/${id}`,
+          message: 'Vui lòng đăng nhập để đặt hàng'
+        }
+      });
+      return;
+    }
+    
+    // Thêm vào giỏ hàng trước
+    addToCart(product, quantity);
+    // Chuyển đến trang thanh toán
+    navigate('/checkout');
+  };
+
+
 
   // Handler yêu thích
   const handleToggleFavorite = () => {
@@ -313,62 +335,36 @@ const ProductDetailPage = () => {
 
             {/* Thông tin tồn kho */}
             <Box className={styles.inventorySection}>
-              <Box className={styles.stockInfo}>
-                <Box className={styles.stockStatus}>
-                  <Inventory className={styles.stockIcon} />
-                  <Box className={styles.stockDetails}>
-                    <Typography variant="body1" className={styles.stockLabel}>
-                      Tình trạng kho hàng:
-                    </Typography>
-                    <Box className={styles.stockIndicator}>
-                      {(() => {
-                        const stock = Number(product.soLuongTon) || 0;
-                        const minStock = Number(product.soLuongToiThieu) || 5;
-                        
-                        if (stock <= 0) {
-                          return (
-                            <Chip 
-                              label="❌ Hết hàng"
-                              color="error"
-                              size="small"
-                              className={styles.stockChip}
-                            />
-                          );
-                        } else if (stock <= minStock) {
-                          return (
-                            <Chip 
-                              label="⚠️ Sắp hết hàng"
-                              color="warning"
-                              size="small"
-                              className={styles.stockChip}
-                            />
-                          );
-                        } else {
-                          return (
-                            <Chip 
-                              label="✅ Còn hàng"
-                              color="success"
-                              size="small"
-                              className={styles.stockChip}
-                            />
-                          );
-                        }
-                      })()}
-                    </Box>
-                  </Box>
-                </Box>
+              {(() => {
+                const stock = Number(product.soLuongTon) || 0;
+                const minStock = Number(product.soLuongToiThieu) || 5;
                 
-                <Box className={styles.stockQuantity}>
-                  <Typography variant="body2" color="text.secondary">
-                    Số lượng có sẵn: <strong>{Number(product.soLuongTon) || 0} sản phẩm</strong>
-                  </Typography>
-                  {Number(product.soLuongTon) > 0 && Number(product.soLuongTon) <= Number(product.soLuongToiThieu || 5) && (
-                    <Typography variant="caption" color="warning.main" className={styles.lowStockWarning}>
-                      ⏰ Chỉ còn lại {Number(product.soLuongTon)} sản phẩm
-                    </Typography>
-                  )}
-                </Box>
-              </Box>
+                if (stock <= 0) {
+                  return (
+                    <Chip 
+                      label="Hết hàng"
+                      color="error"
+                      className={styles.stockChip}
+                    />
+                  );
+                } else if (stock <= minStock) {
+                  return (
+                    <Chip 
+                      label={`Còn ${stock} sản phẩm`}
+                      color="warning"
+                      className={styles.stockChip}
+                    />
+                  );
+                } else {
+                  return (
+                    <Chip 
+                      label={`Còn ${stock} sản phẩm`}
+                      color="success"
+                      className={styles.stockChip}
+                    />
+                  );
+                }
+              })()}
             </Box>
 
             <Divider className={styles.divider} />
@@ -401,15 +397,12 @@ const ProductDetailPage = () => {
                   +
                 </Button>
               </Box>
-              <Typography variant="caption" color="text.secondary" className={styles.quantityNote}>
-                Tối đa: {Math.min(99, Number(product.soLuongTon) || 0)} sản phẩm
-              </Typography>
             </Box>
 
             {/* Buttons hành động */}
             <Box className={styles.actionSection}>
               <Button 
-                variant="contained" 
+                variant="outlined" 
                 color="primary" 
                 size="large"
                 startIcon={<ShoppingCart />}
@@ -417,17 +410,18 @@ const ProductDetailPage = () => {
                 disabled={Number(product.soLuongTon) <= 0}
                 className={styles.addToCartBtn}
               >
-                {Number(product.soLuongTon) <= 0 ? 'Hết hàng' : 'Đặt hàng'}
+                {Number(product.soLuongTon) <= 0 ? 'Hết hàng' : 'Thêm giỏ hàng'}
               </Button>
               <Button 
                 variant="contained" 
-                color="secondary" 
+                color="primary" 
                 size="large"
-                onClick={handleOrderNow}
+                startIcon={<Add />}
+                onClick={handleOrder}
                 disabled={Number(product.soLuongTon) <= 0}
                 className={styles.orderNowBtn}
               >
-                Đặt nhanh
+                Đặt hàng
               </Button>
             </Box>
 
@@ -443,7 +437,7 @@ const ProductDetailPage = () => {
               )}
             </Box>
           </Box>
-                </Grid>
+        </Grid>
       </Grid>
 
       {/* Mô tả sản phẩm */}
@@ -536,13 +530,7 @@ const ProductDetailPage = () => {
         </Box>
       )}
 
-      {/* Quick Order Modal */}
-      <QuickOrderModal
-        open={showQuickOrderModal}
-        onClose={handleQuickOrderClose}
-        product={product}
-        quantity={quantity}
-      />
+
 
       {/* Notification Snackbar */}
       <Snackbar

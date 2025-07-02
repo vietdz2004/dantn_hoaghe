@@ -1,7 +1,8 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import styles from './ProductList.module.scss';
 import { Card, CardContent, CardMedia, Typography, Button, Box, Chip } from '@mui/material';
-import AddToCartButton from './AddToCartButton';
+import { useAuth } from '../contexts/AuthContext';
 
 // Format giá theo chuẩn Việt Nam
 const formatGia = (gia) => {
@@ -33,6 +34,8 @@ const calculateDiscountPercent = (originalPrice, salePrice) => {
 
 // ProductList: Hiển thị danh sách sản phẩm dạng lưới
 const ProductList = ({ products, onProductClick }) => {
+  const { user } = useAuth();
+  const navigate = useNavigate();
   return (
     <div className={styles.gridContainer}>
       <div className={styles.productsGrid}>
@@ -48,17 +51,17 @@ const ProductList = ({ products, onProductClick }) => {
               <Card className={styles.card}>
                 <Box 
                   className={styles.imgBox}
-                  onClick={() => onProductClick && onProductClick(product)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onProductClick && onProductClick(product);
+                  }}
                   sx={{ cursor: 'pointer' }}
                 >
                   {/* Hiển thị phần trăm giảm giá cho tất cả sản phẩm có giảm giá */}
                   {hasDiscount && discountPercent > 0 && (
-                    <Chip
-                      label={`-${discountPercent}%`}
-                      color="error"
-                      size="small"
-                      className={styles.discountBadge}
-                    />
+                    <div className={styles.discountBadge}>
+                      -{discountPercent}%
+                    </div>
                   )}
                   <CardMedia
                     component="img"
@@ -76,7 +79,10 @@ const ProductList = ({ products, onProductClick }) => {
                     variant="h6" 
                     component="div" 
                     className={styles.productName}
-                    onClick={() => onProductClick && onProductClick(product)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onProductClick && onProductClick(product);
+                    }}
                     sx={{ cursor: 'pointer' }}
                   >
                     {product.tenSp}
@@ -92,25 +98,42 @@ const ProductList = ({ products, onProductClick }) => {
                     )}
                   </Box>
                   
-                  {/* Action Buttons */}
-                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, mt: 2 }}>
-                    <AddToCartButton 
-                      product={product}
-                      variant="contained"
-                      size="small"
-                      fullWidth
-                    />
-                    <Button
-                      variant="outlined"
-                      size="small"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onProductClick && onProductClick(product);
-                      }}
-                      sx={{ textTransform: 'none' }}
-                    >
-                      Xem chi tiết
-                    </Button>
+                  {/* Action Button - Chỉ có nút Đặt hàng hoặc Đăng nhập */}
+                  <Box sx={{ mt: 2 }}>
+                    {user ? (
+                      <Button
+                        variant="contained"
+                        color="primary"
+                        size="small"
+                        fullWidth
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onProductClick && onProductClick(product);
+                        }}
+                        sx={{ textTransform: 'none' }}
+                      >
+                        Đặt hàng
+                      </Button>
+                    ) : (
+                      <Button
+                        variant="outlined"
+                        color="primary"
+                        size="small"
+                        fullWidth
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate('/login', {
+                            state: {
+                              returnUrl: `/products/${product.id_SanPham}`,
+                              message: 'Vui lòng đăng nhập để đặt hàng'
+                            }
+                          });
+                        }}
+                        sx={{ textTransform: 'none' }}
+                      >
+                        Đăng nhập để đặt hàng
+                      </Button>
+                    )}
                   </Box>
                 </CardContent>
               </Card>

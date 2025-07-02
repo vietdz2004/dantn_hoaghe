@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { categoriesAPI } from '../services/api';
 import styles from './CategoryMenu.module.scss';
 
-const CategoryMenu = ({ isScrolled }) => {
+const CategoryMenu = ({ isSticky = false }) => {
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -70,6 +70,7 @@ const CategoryMenu = ({ isScrolled }) => {
 
   // ✅ Hiển thị loading state
   if (loading) {
+    console.log('🔄 CategoryMenu: Loading state');
     return (
       <nav className={`${styles.menuWrap} ${styles.loading}`}>
         <div className={styles.menuContainer}>
@@ -107,34 +108,51 @@ const CategoryMenu = ({ isScrolled }) => {
       className={styles.hamburgerBtn}
       onClick={() => setOpen((v) => !v)}
       aria-label="Mở menu"
-      style={{ background: 'none', border: 'none', padding: 8, cursor: 'pointer', display: 'flex', alignItems: 'center' }}
     >
-      <svg width="32" height="32" viewBox="0 0 32 32" fill="none"><rect y="6" width="32" height="4" rx="2" fill="#e91e63"/><rect y="14" width="32" height="4" rx="2" fill="#e91e63"/><rect y="22" width="32" height="4" rx="2" fill="#e91e63"/></svg>
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+        <rect y="4" width="24" height="3" rx="1.5" fill="#e91e63"/>
+        <rect y="10.5" width="24" height="3" rx="1.5" fill="#e91e63"/>
+        <rect y="17" width="24" height="3" rx="1.5" fill="#e91e63"/>
+      </svg>
     </button>
   );
 
   // Mũi tên xổ xuống
   const ArrowIcon = ({ open }) => (
-    <span style={{ display: 'inline-block', transition: 'transform 0.2s', transform: open ? 'rotate(90deg)' : 'rotate(0deg)', marginLeft: 8 }}>
-      <svg width="18" height="18" viewBox="0 0 24 24"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6z" fill="#e91e63"/></svg>
+    <span style={{ 
+      display: 'inline-block', 
+      transition: 'transform 0.2s ease', 
+      transform: open ? 'rotate(90deg)' : 'rotate(0deg)',
+      marginLeft: 8 
+    }}>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+        <path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6z" fill="#e91e63"/>
+      </svg>
     </span>
   );
 
   return (
-    <nav className={`${styles.menuWrap} ${isScrolled ? styles.scrolled : ''}`}>
+    <nav className={`${styles.menuWrap} ${isSticky ? styles.compact : ''}`}>
       {/* Hamburger chỉ hiện trên mobile */}
       <div className={styles.hamburgerOnly}>{Hamburger}</div>
+      
       {/* Overlay tối khi mở menu mobile */}
-      {open && <div className={styles.menuOverlay} onClick={() => {setOpen(false); setOpenSub(null);}}></div>}
+      {open && (
+        <div 
+          className={styles.menuOverlay} 
+          onClick={() => {setOpen(false); setOpenSub(null);}}
+        />
+      )}
+      
+      {/* Mobile Menu Panel */}
       <div
-        className={styles.menuMobilePanel + ' ' + (open ? styles.menuMobilePanelOpen : '')}
+        className={`${styles.menuMobilePanel} ${open ? styles.menuMobilePanelOpen : ''}`}
         ref={menuRef}
       >
         {/* Header mobile: logo nhỏ + nút đóng */}
         <div className={styles.menuMobileHeader}>
-          <img src="/logo-hoashop.png" alt="logo" style={{height:36,marginRight:8}} />
-          <span className={styles.menuMobileTitle}>DANH MỤC</span>
-          <button className={styles.closeBtn} onClick={() => {setOpen(false); setOpenSub(null);}} aria-label="Đóng menu">×</button>
+          <span className={styles.menuMobileTitle}>🌸 DANH MỤC</span>
+          <button className={styles.closeBtn} onClick={() => {setOpen(false); setOpenSub(null);}} aria-label="Đóng menu">✕</button>
         </div>
         <ul className={styles.menuMobileList}>
           {categories.map((cat) => (
@@ -164,6 +182,7 @@ const CategoryMenu = ({ isScrolled }) => {
           ))}
         </ul>
       </div>
+      
       {/* PC/tablet giữ nguyên menuList */}
       <div className={styles.menuContainer}>
         <ul className={styles.menuList}>

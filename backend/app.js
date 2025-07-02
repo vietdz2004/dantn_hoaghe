@@ -16,6 +16,7 @@ const voucherRoutes = require('./routes/voucherRoutes');
 const reviewRoutes = require('./routes/reviewRoutes');
 const quickOrderRoutes = require('./routes/quickOrderRoutes');
 const dashboardRoutes = require('./routes/dashboardRoutes');
+const cartRoutes = require('./routes/cartRoutes');
 
 // Import admin routes
 const adminRoutes = require('./routes/admin/index');
@@ -116,6 +117,7 @@ app.use('/api/vouchers', voucherRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/quick-orders', quickOrderRoutes);
 app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/cart', cartRoutes);
 
 // Admin routes
 app.use('/api/admin', adminRoutes);

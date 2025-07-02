@@ -12,8 +12,11 @@ import CategoryPage from './pages/CategoryPage';
 import OrderPage from './pages/OrderPage';
 import UserPage from './pages/UserPage';
 import CartPage from './pages/CartPage';
+import CheckoutPage from './pages/CheckoutPage';
+import OrderSuccessPage from './pages/OrderSuccessPage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
+import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import './App.scss';
 
 // Tạo theme Material-UI với màu hồng chính
@@ -36,11 +39,6 @@ function App() {
       <AuthProvider>
         <CartProvider>
           <Routes>
-            {/* Auth Routes - Without Layout */}
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/register" element={<RegisterPage />} />
-            
-            {/* Main Routes - With Layout */}
             <Route path="/*" element={
               <MainLayout>
                 <Routes>
@@ -49,9 +47,14 @@ function App() {
                   <Route path="/products/:id" element={<ProductDetailPage />} />
                   <Route path="/category/:categoryId" element={<CategoryPage />} />
                   <Route path="/orders" element={<OrderPage />} />
+                  <Route path="/orders/success" element={<OrderSuccessPage />} />
                   <Route path="/users" element={<UserPage />} />
                   <Route path="/profile" element={<UserPage />} />
                   <Route path="/cart" element={<CartPage />} />
+                  <Route path="/checkout" element={<CheckoutPage />} />
+                  <Route path="/login" element={<LoginPage />} />
+                  <Route path="/register" element={<RegisterPage />} />
+                  <Route path="/forgot-password" element={<ForgotPasswordPage />} />
                 </Routes>
               </MainLayout>
             } />

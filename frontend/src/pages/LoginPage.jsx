@@ -20,8 +20,9 @@ const LoginPage = () => {
   const [apiError, setApiError] = useState('');
   const [success, setSuccess] = useState('');
 
-  // Get redirect path from location state
-  const from = location.state?.from?.pathname || '/';
+  // Get redirect path and message from location state
+  const returnUrl = location.state?.returnUrl || '/';
+  const authMessage = location.state?.message;
 
   // Handle input changes
   const handleChange = (e) => {
@@ -84,7 +85,7 @@ const LoginPage = () => {
       if (result.success) {
         setSuccess('Đăng nhập thành công!');
         setTimeout(() => {
-          navigate(from, { replace: true });
+          navigate(returnUrl, { replace: true });
         }, 1000);
       } else {
         setApiError(result.message);
@@ -96,117 +97,131 @@ const LoginPage = () => {
   };
 
   return (
-    <Container maxWidth="sm" className={styles.loginContainer}>
-      <Paper elevation={3} className={styles.loginPaper}>
-        <Box className={styles.loginHeader}>
-          <Typography variant="h4" component="h1" className={styles.title}>
-            🌸 Đăng Nhập
+    <Box className={styles.loginContainer}>
+      {/* Main Content */}
+      <Box className={styles.mainContent}>
+        {/* Left Column - Khách hàng mới */}
+        <Box className={styles.leftColumn}>
+          <Typography className={styles.sectionTitle}>
+            Đăng ký tài khoản
           </Typography>
-          <Typography variant="body1" className={styles.subtitle}>
-            Chào mừng bạn quay trở lại FlowerCorner!
+          <Typography className={styles.sectionDescription}>
+            Bằng cách tạo tài khoản, bạn sẽ có thể mua sắm nhanh hơn, cập nhật trạng thái đơn hàng và theo dõi các đơn hàng bạn đã thực hiện trước đó.
           </Typography>
-        </Box>
-
-        {apiError && (
-          <Alert severity="error" className={styles.alert}>
-            {apiError}
-          </Alert>
-        )}
-
-        {success && (
-          <Alert severity="success" className={styles.alert}>
-            {success}
-          </Alert>
-        )}
-
-        <Box component="form" onSubmit={handleSubmit} className={styles.form}>
-          <TextField
-            fullWidth
-            name="email"
-            type="email"
-            label="Email"
-            value={formData.email}
-            onChange={handleChange}
-            error={!!errors.email}
-            helperText={errors.email}
-            disabled={loading}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <Email color="action" />
-                </InputAdornment>
-              ),
-            }}
-            className={styles.textField}
-          />
-
-          <TextField
-            fullWidth
-            name="password"
-            type={showPassword ? 'text' : 'password'}
-            label="Mật khẩu"
-            value={formData.password}
-            onChange={handleChange}
-            error={!!errors.password}
-            helperText={errors.password}
-            disabled={loading}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <Lock color="action" />
-                </InputAdornment>
-              ),
-              endAdornment: (
-                <InputAdornment position="end">
-                  <IconButton
-                    onClick={() => setShowPassword(!showPassword)}
-                    edge="end"
-                  >
-                    {showPassword ? <VisibilityOff /> : <Visibility />}
-                  </IconButton>
-                </InputAdornment>
-              ),
-            }}
-            className={styles.textField}
-          />
-
-          <Button
-            type="submit"
-            fullWidth
-            variant="contained"
-            disabled={loading}
-            className={styles.submitButton}
+          <Button 
+            className={styles.continueButton}
+            onClick={() => navigate('/register')}
           >
-            {loading ? 'Đang đăng nhập...' : 'Đăng Nhập'}
+            Tiếp tục
           </Button>
         </Box>
 
-        <Box className={styles.loginFooter}>
-          <Typography variant="body2" className={styles.linkText}>
-            Chưa có tài khoản?{' '}
-            <Link to="/register" className={styles.link}>
-              Đăng ký ngay
-            </Link>
+        {/* Right Column - Form đăng nhập */}
+        <Box className={styles.rightColumn}>
+          <Typography className={styles.formTitle}>
+            Phần hồi khách hàng
           </Typography>
-          
-          <Typography variant="body2" className={styles.linkText}>
-            <Link to="/forgot-password" className={styles.link}>
-              Quên mật khẩu?
-            </Link>
+          <Typography className={styles.formSubtitle}>
+            Tôi là một khách hàng cũ
           </Typography>
-        </Box>
 
-        <Box className={styles.demoAccount}>
-          <Typography variant="body2" className={styles.demoTitle}>
-            Tài khoản demo:
-          </Typography>
-          <Typography variant="body2" className={styles.demoInfo}>
-            Email: demo@flowercorner.vn<br />
-            Mật khẩu: 123456
-          </Typography>
+          {authMessage && (
+            <Alert severity="info" className={styles.alert}>
+              {authMessage}
+            </Alert>
+          )}
+
+          {apiError && (
+            <Alert severity="error" className={styles.alert}>
+              {apiError}
+            </Alert>
+          )}
+
+          {success && (
+            <Alert severity="success" className={styles.alert}>
+              {success}
+            </Alert>
+          )}
+
+          <Box component="form" onSubmit={handleSubmit} className={styles.form}>
+            <TextField
+              fullWidth
+              name="email"
+              type="email"
+              label="Địa chỉ email"
+              value={formData.email}
+              onChange={handleChange}
+              error={!!errors.email}
+              helperText={errors.email}
+              disabled={loading}
+              required
+              className={styles.textField}
+            />
+
+            <TextField
+              fullWidth
+              name="password"
+              type={showPassword ? 'text' : 'password'}
+              label="Mật khẩu"
+              value={formData.password}
+              onChange={handleChange}
+              error={!!errors.password}
+              helperText={errors.password}
+              disabled={loading}
+              required
+              InputProps={{
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton
+                      onClick={() => setShowPassword(!showPassword)}
+                      edge="end"
+                    >
+                      {showPassword ? <VisibilityOff /> : <Visibility />}
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              }}
+              className={styles.textField}
+            />
+
+            <Link to="/forgot-password" className={styles.forgotPassword}>
+              Đã quên mật khẩu
+            </Link>
+
+            <Button
+              type="submit"
+              variant="contained"
+              disabled={loading}
+              className={styles.submitButton}
+            >
+              {loading ? 'Đang đăng nhập...' : 'Đăng nhập'}
+            </Button>
+          </Box>
         </Box>
-      </Paper>
-    </Container>
+      </Box>
+
+      {/* Sidebar */}
+      <Box className={styles.sidebar}>
+        <Typography className={styles.sidebarTitle}>
+          Tài khoản
+        </Typography>
+        <Link to="/login" className={styles.sidebarLink}>
+          Đăng nhập
+        </Link>
+        <Link to="/register" className={styles.sidebarLink}>
+          Đăng ký
+        </Link>
+        <Link to="/forgot-password" className={styles.sidebarLink}>
+          Đã quên mật khẩu
+        </Link>
+        <Link to="/profile" className={styles.sidebarLink}>
+          Tài khoản của tôi
+        </Link>
+        <Link to="/orders" className={styles.sidebarLink}>
+          Lịch sử đơn hàng
+        </Link>
+      </Box>
+    </Box>
   );
 };
 

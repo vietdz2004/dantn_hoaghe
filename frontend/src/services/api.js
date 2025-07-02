@@ -49,16 +49,16 @@ export const productsAPI = {
   getRelatedProducts: (id, limit = 8) => api.get(`/products/${id}/related`, { params: { limit } }),
 
   // Lấy sản phẩm giảm giá
-  getDiscountProducts: (limit = 12) => api.get('/products/discount', { params: { limit } }),
+  getDiscountProducts: (params = {}) => api.get('/products/discount', { params }),
 
   // Lấy sản phẩm popular/trending
-  getPopularProducts: (limit = 12) => api.get('/products/popular', { params: { limit } }),
+  getPopularProducts: (params = {}) => api.get('/products/popular', { params }),
 
   // Lấy sản phẩm mới
-  getNewProducts: (limit = 12) => api.get('/products/new', { params: { limit } }),
+  getNewProducts: (params = {}) => api.get('/products/new', { params }),
 
   // Lấy sản phẩm bestseller
-  getBestsellerProducts: (limit = 12) => api.get('/products/bestseller', { params: { limit } }),
+  getBestsellerProducts: (params = {}) => api.get('/products/bestseller', { params }),
 
   // Lấy sản phẩm theo danh mục
   getProductsByCategory: (params = {}) => api.get('/products/by-category', { params }),
@@ -171,6 +171,27 @@ export const authAPI = {
   forgotPassword: (email) => api.post('/users/auth/forgot-password', { email }),
 
   resetPassword: (token, password) => api.post('/users/auth/reset-password', { token, password })
+};
+
+// ====== CART API ======
+export const cartAPI = {
+  // Lấy tất cả items trong giỏ hàng của user
+  getCartItems: (userId) => api.get(`/cart/${userId}`),
+
+  // Thêm sản phẩm vào giỏ hàng
+  addToCart: (data) => api.post('/cart/add', data),
+
+  // Cập nhật số lượng sản phẩm trong giỏ hàng
+  updateCartItem: (userId, productId, data) => api.put(`/cart/${userId}/${productId}`, data),
+
+  // Xóa sản phẩm khỏi giỏ hàng
+  removeFromCart: (userId, productId) => api.delete(`/cart/${userId}/${productId}`),
+
+  // Xóa tất cả items trong giỏ hàng
+  clearCart: (userId) => api.delete(`/cart/${userId}`),
+
+  // Sync cart từ localStorage lên database
+  syncCartFromLocalStorage: (data) => api.post('/cart/sync', data)
 };
 
 // ====== LEGACY SUPPORT - Giữ lại để tương thích ngược ======

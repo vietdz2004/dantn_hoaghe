@@ -22,6 +22,7 @@ import {
 } from '@mui/icons-material';
 import { useCart } from '../contexts/CartContext';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
 
 // Utility function to format currency
 const formatPrice = (price) => {
@@ -48,7 +49,8 @@ const getImageUrl = (hinhAnh) => {
 };
 
 const CartPage = () => {
-  const { items, totalItems, totalAmount, updateQuantity, removeFromCart, clearCart } = useCart();
+  const { cartItems, getTotalItems, getTotalPrice, updateQuantity, removeFromCart, clearCart } = useCart();
+  const { user } = useAuth();
   const navigate = useNavigate();
 
   const handleQuantityChange = (productId, newQuantity) => {
@@ -60,11 +62,19 @@ const CartPage = () => {
   };
 
   const handleCheckout = () => {
-    // TODO: Implement checkout logic
-    alert('Chức năng thanh toán sẽ được phát triển sau!');
+    if (!user) {
+      navigate('/login', {
+        state: {
+          returnUrl: '/checkout',
+          message: 'Vui lòng đăng nhập để tiếp tục thanh toán'
+        }
+      });
+      return;
+    }
+    navigate('/checkout');
   };
 
-  if (items.length === 0) {
+  if (cartItems.length === 0) {
     return (
       <Container maxWidth="lg" sx={{ py: 4 }}>
         <Paper elevation={2} sx={{ p: 4, textAlign: 'center' }}>
@@ -93,7 +103,7 @@ const CartPage = () => {
       {/* Header */}
       <Box display="flex" alignItems="center" justifyContent="space-between" mb={4}>
         <Typography variant="h4" fontWeight="bold">
-          Giỏ hàng ({totalItems} sản phẩm)
+          Giỏ hàng ({getTotalItems()} sản phẩm)
         </Typography>
         <Button
           variant="outlined"
@@ -109,7 +119,7 @@ const CartPage = () => {
         <Grid item xs={12} md={8}>
           <Card elevation={2}>
             <CardContent>
-              {items.map((item, index) => (
+              {cartItems.map((item, index) => (
                 <Box key={item.id_SanPham}>
                   <Grid container spacing={2} alignItems="center">
                     {/* Product Image */}
@@ -156,16 +166,16 @@ const CartPage = () => {
                       <Box display="flex" alignItems="center" justifyContent="center">
                         <IconButton 
                           size="small" 
-                          onClick={() => handleQuantityChange(item.id_SanPham, item.quantity - 1)}
+                          onClick={() => handleQuantityChange(item.id_SanPham, item.soLuong - 1)}
                         >
                           <RemoveIcon />
                         </IconButton>
                         <Typography variant="body1" sx={{ mx: 2, minWidth: 30, textAlign: 'center' }}>
-                          {item.quantity}
+                          {item.soLuong}
                         </Typography>
                         <IconButton 
                           size="small" 
-                          onClick={() => handleQuantityChange(item.id_SanPham, item.quantity + 1)}
+                          onClick={() => handleQuantityChange(item.id_SanPham, item.soLuong + 1)}
                         >
                           <AddIcon />
                         </IconButton>
@@ -176,7 +186,7 @@ const CartPage = () => {
                     <Grid item xs={6} sm={3}>
                       <Box textAlign="right">
                         <Typography variant="body1" fontWeight="bold" color="primary">
-                          {formatPrice((item.giaKhuyenMai || item.gia) * item.quantity)}
+                          {formatPrice((item.giaKhuyenMai || item.gia) * item.soLuong)}
                         </Typography>
                         <IconButton 
                           size="small" 
@@ -190,7 +200,7 @@ const CartPage = () => {
                     </Grid>
                   </Grid>
 
-                  {index < items.length - 1 && <Divider sx={{ my: 2 }} />}
+                  {index < cartItems.length - 1 && <Divider sx={{ my: 2 }} />}
                 </Box>
               ))}
 
@@ -219,12 +229,12 @@ const CartPage = () => {
               
               <Box display="flex" justifyContent="space-between" mb={1}>
                 <Typography>Số lượng sản phẩm:</Typography>
-                <Typography>{totalItems} sản phẩm</Typography>
+                <Typography>{getTotalItems()} sản phẩm</Typography>
               </Box>
               
               <Box display="flex" justifyContent="space-between" mb={2}>
                 <Typography>Tạm tính:</Typography>
-                <Typography>{formatPrice(totalAmount)}</Typography>
+                <Typography>{formatPrice(getTotalPrice())}</Typography>
               </Box>
               
               <Divider sx={{ my: 2 }} />
@@ -234,7 +244,7 @@ const CartPage = () => {
                   Tổng cộng:
                 </Typography>
                 <Typography variant="h6" fontWeight="bold" color="primary">
-                  {formatPrice(totalAmount)}
+                  {formatPrice(getTotalPrice())}
                 </Typography>
               </Box>
 

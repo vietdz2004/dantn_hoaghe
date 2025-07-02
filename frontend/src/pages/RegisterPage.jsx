@@ -20,12 +20,10 @@ const RegisterPage = () => {
     email: '',
     soDienThoai: '',
     password: '',
-    confirmPassword: '',
     agreeToTerms: false
   });
   const [errors, setErrors] = useState({});
   const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [apiError, setApiError] = useState('');
   const [success, setSuccess] = useState('');
 
@@ -78,12 +76,7 @@ const RegisterPage = () => {
       newErrors.password = 'Mật khẩu phải có ít nhất 6 ký tự';
     }
 
-    // Validate confirm password
-    if (!formData.confirmPassword) {
-      newErrors.confirmPassword = 'Vui lòng xác nhận mật khẩu';
-    } else if (formData.password !== formData.confirmPassword) {
-      newErrors.confirmPassword = 'Mật khẩu xác nhận không khớp';
-    }
+
 
     // Validate terms agreement
     if (!formData.agreeToTerms) {
@@ -105,7 +98,7 @@ const RegisterPage = () => {
     }
 
     try {
-      const { confirmPassword, agreeToTerms, password, ...otherData } = formData;
+      const { password, ...otherData } = formData;
       
       // Map frontend field to backend field
       const registerData = {
@@ -125,118 +118,131 @@ const RegisterPage = () => {
       } else {
         setApiError(result.message);
       }
-    } catch (error) {
+    } catch {
       setApiError('Có lỗi xảy ra. Vui lòng thử lại.');
     }
   };
 
   return (
-    <Container maxWidth="md" className={styles.registerContainer}>
-      <Paper elevation={3} className={styles.registerPaper}>
-        <Box className={styles.registerHeader}>
-          <Typography variant="h4" component="h1" className={styles.title}>
-            🌸 Đăng Ký Tài Khoản
+    <Box className={styles.registerContainer}>
+      {/* Banner */}
+      <Box className={styles.banner}>
+        ĐẶT HOA ONLINE - GIAO MIỄN PHÍ TP HCM & HÀ NỘI - GỌI NGAY 1234 123 123 HOẶC 4312 160 123
+      </Box>
+      
+      {/* Main Content */}
+      <Box className={styles.mainContent}>
+        {/* Form đăng ký - Full width */}
+        <Box className={styles.registerFormColumn}>
+          <Typography className={styles.pageTitle}>
+            Đăng ký tài khoản
           </Typography>
-          <Typography variant="body1" className={styles.subtitle}>
-            Tạo tài khoản để trải nghiệm dịch vụ của FlowerCorner
+          <Typography className={styles.pageDescription}>
+            Nếu bạn đã có tài khoản với chúng tôi, vui lòng đăng nhập tại <Link to="/login" className={styles.link}>trang đăng nhập</Link> .
           </Typography>
-        </Box>
+          
+          <Typography className={styles.formTitle}>
+            Thông tin cá nhân của bạn
+          </Typography>
 
-        {apiError && (
-          <Alert severity="error" className={styles.alert}>
-            {apiError}
-          </Alert>
-        )}
+          {apiError && (
+            <Alert severity="error" className={styles.alert}>
+              {apiError}
+            </Alert>
+          )}
 
-        {success && (
-          <Alert severity="success" className={styles.alert}>
-            {success}
-          </Alert>
-        )}
+          {success && (
+            <Alert severity="success" className={styles.alert}>
+              {success}
+            </Alert>
+          )}
 
-        <Box component="form" onSubmit={handleSubmit} className={styles.form}>
-          <Grid container spacing={2}>
-            <Grid item xs={12} sm={6}>
+          <Box component="form" onSubmit={handleSubmit} className={styles.form}>
+            <Box className={styles.formRow}>
+              <Typography className={styles.fieldLabel}>
+                <span className={styles.required}>*</span> Họ tên
+              </Typography>
               <TextField
-                fullWidth
                 name="hoTen"
-                label="Họ và tên"
+                placeholder="Họ tên"
                 value={formData.hoTen}
                 onChange={handleChange}
                 error={!!errors.hoTen}
-                helperText={errors.hoTen}
                 disabled={loading}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <Person color="action" />
-                    </InputAdornment>
-                  ),
-                }}
+                required
                 className={styles.textField}
+                InputLabelProps={{ shrink: false }}
               />
-            </Grid>
+            </Box>
+            {errors.hoTen && (
+              <Typography variant="body2" color="error" className={styles.errorText}>
+                {errors.hoTen}
+              </Typography>
+            )}
 
-            <Grid item xs={12} sm={6}>
+            <Box className={styles.formRow}>
+              <Typography className={styles.fieldLabel}>
+                <span className={styles.required}>*</span> E-mail
+              </Typography>
               <TextField
-                fullWidth
-                name="soDienThoai"
-                label="Số điện thoại"
-                value={formData.soDienThoai}
-                onChange={handleChange}
-                error={!!errors.soDienThoai}
-                helperText={errors.soDienThoai}
-                disabled={loading}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <Phone color="action" />
-                    </InputAdornment>
-                  ),
-                }}
-                className={styles.textField}
-              />
-            </Grid>
-
-            <Grid item xs={12}>
-              <TextField
-                fullWidth
                 name="email"
                 type="email"
-                label="Email"
+                placeholder="E-mail"
                 value={formData.email}
                 onChange={handleChange}
                 error={!!errors.email}
-                helperText={errors.email}
                 disabled={loading}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <Email color="action" />
-                    </InputAdornment>
-                  ),
-                }}
+                required
                 className={styles.textField}
+                InputLabelProps={{ shrink: false }}
               />
-            </Grid>
+            </Box>
+            {errors.email && (
+              <Typography variant="body2" color="error" className={styles.errorText}>
+                {errors.email}
+              </Typography>
+            )}
 
-            <Grid item xs={12} sm={6}>
+            <Box className={styles.formRow}>
+              <Typography className={styles.fieldLabel}>
+                <span className={styles.required}>*</span> Điện thoại
+              </Typography>
               <TextField
-                fullWidth
+                name="soDienThoai"
+                placeholder="Điện thoại"
+                value={formData.soDienThoai}
+                onChange={handleChange}
+                error={!!errors.soDienThoai}
+                disabled={loading}
+                required
+                className={styles.textField}
+                InputLabelProps={{ shrink: false }}
+              />
+            </Box>
+            {errors.soDienThoai && (
+              <Typography variant="body2" color="error" className={styles.errorText}>
+                {errors.soDienThoai}
+              </Typography>
+            )}
+
+            <Typography className={styles.formTitle} style={{ marginTop: '30px' }}>
+              Mật khẩu của bạn
+            </Typography>
+
+            <Box className={styles.formRow}>
+              <Typography className={styles.fieldLabel}>
+                <span className={styles.required}>*</span> Mật khẩu
+              </Typography>
+              <TextField
                 name="password"
                 type={showPassword ? 'text' : 'password'}
-                label="Mật khẩu"
+                placeholder="Mật khẩu"
                 value={formData.password}
                 onChange={handleChange}
                 error={!!errors.password}
-                helperText={errors.password}
                 disabled={loading}
+                required
                 InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <Lock color="action" />
-                    </InputAdornment>
-                  ),
                   endAdornment: (
                     <InputAdornment position="end">
                       <IconButton
@@ -249,92 +255,73 @@ const RegisterPage = () => {
                   ),
                 }}
                 className={styles.textField}
+                InputLabelProps={{ shrink: false }}
               />
-            </Grid>
-
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                name="confirmPassword"
-                type={showConfirmPassword ? 'text' : 'password'}
-                label="Xác nhận mật khẩu"
-                value={formData.confirmPassword}
-                onChange={handleChange}
-                error={!!errors.confirmPassword}
-                helperText={errors.confirmPassword}
-                disabled={loading}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <Lock color="action" />
-                    </InputAdornment>
-                  ),
-                  endAdornment: (
-                    <InputAdornment position="end">
-                      <IconButton
-                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                        edge="end"
-                      >
-                        {showConfirmPassword ? <VisibilityOff /> : <Visibility />}
-                      </IconButton>
-                    </InputAdornment>
-                  ),
-                }}
-                className={styles.textField}
-              />
-            </Grid>
-          </Grid>
-
-          <FormControlLabel
-            control={
-              <Checkbox
-                name="agreeToTerms"
-                checked={formData.agreeToTerms}
-                onChange={handleChange}
-                color="primary"
-              />
-            }
-            label={
-              <Typography variant="body2">
-                Tôi đồng ý với{' '}
-                <Link to="/terms" className={styles.link}>
-                  Điều khoản sử dụng
-                </Link>{' '}
-                và{' '}
-                <Link to="/privacy" className={styles.link}>
-                  Chính sách bảo mật
-                </Link>
+            </Box>
+            {errors.password && (
+              <Typography variant="body2" color="error" className={styles.errorText}>
+                {errors.password}
               </Typography>
-            }
-            className={styles.checkbox}
-          />
-          {errors.agreeToTerms && (
-            <Typography variant="body2" color="error" className={styles.errorText}>
-              {errors.agreeToTerms}
-            </Typography>
-          )}
+            )}
 
-          <Button
-            type="submit"
-            fullWidth
-            variant="contained"
-            disabled={loading}
-            className={styles.submitButton}
-          >
-            {loading ? 'Đang đăng ký...' : 'Đăng Ký'}
-          </Button>
+
+
+            <FormControlLabel
+              control={
+                <Checkbox
+                  name="agreeToTerms"
+                  checked={formData.agreeToTerms}
+                  onChange={handleChange}
+                  color="primary"
+                />
+              }
+              label={
+                <Typography variant="body2">
+                  Tôi đã đọc và đồng ý với <Link to="/terms" className={styles.link}>Điều khoản</Link> & <Link to="/privacy" className={styles.link}>Điều kiện</Link>
+                </Typography>
+              }
+              className={styles.checkbox}
+            />
+            {errors.agreeToTerms && (
+              <Typography variant="body2" color="error" className={styles.errorText}>
+                {errors.agreeToTerms}
+              </Typography>
+            )}
+
+            <Button
+              type="submit"
+              variant="contained"
+              disabled={loading}
+              className={styles.submitButton}
+            >
+              {loading ? 'Đang đăng ký...' : 'Tiếp tục'}
+            </Button>
+          </Box>
         </Box>
 
-        <Box className={styles.registerFooter}>
-          <Typography variant="body2" className={styles.linkText}>
-            Đã có tài khoản?{' '}
-            <Link to="/login" className={styles.link}>
-              Đăng nhập ngay
-            </Link>
+        {/* Sidebar */}
+        <Box className={styles.sidebar}>
+          <Typography className={styles.sidebarTitle}>
+            Tài khoản
           </Typography>
+          <Link to="/login" className={styles.sidebarLink}>
+            Đăng nhập
+          </Link>
+          <Link to="/register" className={styles.sidebarLink}>
+            Đăng ký
+          </Link>
+          <Link to="/forgot-password" className={styles.sidebarLink}>
+            Đã quên mật khẩu
+          </Link>
+          <Link to="/profile" className={styles.sidebarLink}>
+            Tài khoản của tôi
+          </Link>
+          <Link to="/orders" className={styles.sidebarLink}>
+            Lịch sử đơn hàng
+          </Link>
         </Box>
-      </Paper>
-    </Container>
+      </Box>
+    </Box>
   );
 };
 

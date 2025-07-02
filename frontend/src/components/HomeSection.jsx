@@ -14,7 +14,7 @@ const HomeSection = ({ title, subtitle, children, onViewMore }) => {
             className={styles.viewMoreBtn}
             onClick={onViewMore}
           >
-            Xem thêm →
+            Xem thêm
           </button>
         )}
       </div>

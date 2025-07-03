@@ -3,6 +3,8 @@ const { Op, QueryTypes } = require('sequelize');
 const { sequelize } = require('../models/database');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const crypto = require('crypto');
+const { sendResetPasswordEmail } = require('../services/emailService');
 
 // Lấy tất cả người dùng với RAW SQL filtering, search, pagination, sorting
 exports.getAll = async (req, res) => {
@@ -440,7 +442,7 @@ const register = async (req, res) => {
     const token = jwt.sign(
       { id: user.id_NguoiDung, email: user.email, vaiTro: user.vaiTro },
       process.env.JWT_SECRET || 'your-secret-key',
-      { expiresIn: '24h' }
+      { expiresIn: '7d' }
     );
 
     // Remove password from response
@@ -469,9 +471,11 @@ const register = async (req, res) => {
 const login = async (req, res) => {
   try {
     const { email, matKhau } = req.body;
+    console.log('LOGIN DEBUG:', { email, matKhau });
 
     // Validate input
     if (!email || !matKhau) {
+      console.log('LOGIN ERROR: Missing email or password');
       return res.status(400).json({
         success: false,
         message: 'Vui lòng nhập email và mật khẩu'
@@ -480,7 +484,9 @@ const login = async (req, res) => {
 
     // Find user by email
     const user = await User.findOne({ where: { email } });
+    console.log('LOGIN DEBUG: user found:', user ? user.email : null);
     if (!user) {
+      console.log('LOGIN ERROR: User not found');
       return res.status(401).json({
         success: false,
         message: 'Email hoặc mật khẩu không đúng'
@@ -489,7 +495,9 @@ const login = async (req, res) => {
 
     // Check password
     const isPasswordValid = await bcrypt.compare(matKhau, user.matKhau);
+    console.log('LOGIN DEBUG: password valid:', isPasswordValid);
     if (!isPasswordValid) {
+      console.log('LOGIN ERROR: Wrong password');
       return res.status(401).json({
         success: false,
         message: 'Email hoặc mật khẩu không đúng'
@@ -500,7 +508,7 @@ const login = async (req, res) => {
     const token = jwt.sign(
       { id: user.id_NguoiDung, email: user.email, vaiTro: user.vaiTro },
       process.env.JWT_SECRET || 'your-secret-key',
-      { expiresIn: '24h' }
+      { expiresIn: '7d' }
     );
 
     // Remove password from response
@@ -529,17 +537,14 @@ const login = async (req, res) => {
 const verifyToken = async (req, res) => {
   try {
     const token = req.headers.authorization?.split(' ')[1];
-
     if (!token) {
       return res.status(401).json({
         success: false,
         message: 'Không tìm thấy token xác thực'
       });
     }
-
     // Verify token
     const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
-    
     // Get user info
     const user = await User.findByPk(decoded.id);
     if (!user) {
@@ -548,16 +553,12 @@ const verifyToken = async (req, res) => {
         message: 'Token không hợp lệ'
       });
     }
-
     // Remove password from response
     const userResponse = user.toJSON();
     delete userResponse.matKhau;
-
     res.json({
       success: true,
-      data: {
-        user: userResponse
-      },
+      data: { user: userResponse },
       message: 'Token hợp lệ'
     });
   } catch (error) {
@@ -590,6 +591,8 @@ const logout = async (req, res) => {
 // Cập nhật profile người dùng
 const updateProfile = async (req, res) => {
   try {
+    console.log('DEBUG updateProfile req.user:', req.user);
+    console.log('DEBUG updateProfile req.body:', req.body);
     const userId = req.user.id; // From auth middleware
     const userData = req.body;
 
@@ -627,16 +630,445 @@ const updateProfile = async (req, res) => {
   }
 };
 
+// === ADMIN FUNCTIONS - Các function dành cho admin ===
+
+// Cập nhật trạng thái người dùng (HOAT_DONG, TAM_KHOA, DA_KHOA)
+exports.updateUserStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+
+    // Validate status - Kiểm tra trạng thái hợp lệ
+    const validStatuses = ['HOAT_DONG', 'TAM_KHOA', 'DA_KHOA'];
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Trạng thái không hợp lệ'
+      });
+    }
+
+    const user = await User.findByPk(id);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'Không tìm thấy người dùng'
+      });
+    }
+
+    await user.update({ trangThai: status });
+    
+    res.json({
+      success: true,
+      message: `Đã cập nhật trạng thái người dùng thành ${status}`,
+      data: { id, status }
+    });
+  } catch (error) {
+    console.error('Error in updateUserStatus:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Lỗi khi cập nhật trạng thái người dùng',
+      error: error.message
+    });
+  }
+};
+
+// Lấy lịch sử đơn hàng của người dùng
+exports.getUserOrders = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { page = 1, limit = 10 } = req.query;
+
+    const offset = (parseInt(page) - 1) * parseInt(limit);
+
+    // Query lấy đơn hàng của user - Truy vấn SQL để lấy đơn hàng
+    const ordersQuery = `
+      SELECT 
+        o.id_DonHang,
+        o.tongThanhToan,
+        o.trangThaiDonHang,
+        o.ngayDatHang,
+        o.phuongThucThanhToan,
+        COUNT(od.id_ChiTietDH) as itemCount
+      FROM donhang o
+      LEFT JOIN chitietdonhang od ON o.id_DonHang = od.id_DonHang
+      WHERE o.id_NguoiDung = ?
+      GROUP BY o.id_DonHang
+      ORDER BY o.ngayDatHang DESC
+      LIMIT ? OFFSET ?
+    `;
+
+    const orders = await sequelize.query(ordersQuery, {
+      replacements: [id, parseInt(limit), offset],
+      type: QueryTypes.SELECT
+    });
+
+    res.json({
+      success: true,
+      data: orders,
+      message: `Lấy lịch sử ${orders.length} đơn hàng thành công`
+    });
+  } catch (error) {
+    console.error('Error in getUserOrders:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Lỗi khi lấy lịch sử đơn hàng',
+      error: error.message
+    });
+  }
+};
+
+// Tổng quan người dùng cho admin
+exports.getUsersSummary = async (req, res) => {
+  try {
+    // Sử dụng lại function getUserStats đã có
+    return exports.getUserStats(req, res);
+  } catch (error) {
+    console.error('Error in getUsersSummary:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Lỗi khi lấy tổng quan người dùng',
+      error: error.message
+    });
+  }
+};
+
+// Hoạt động người dùng gần đây
+exports.getUserActivity = async (req, res) => {
+  try {
+    const { period = '30d' } = req.query;
+    
+    let dateCondition = '';
+    switch (period) {
+      case '7d':
+        dateCondition = 'AND u.ngayTao >= DATE_SUB(CURRENT_DATE, INTERVAL 7 DAY)';
+        break;
+      case '30d':
+        dateCondition = 'AND u.ngayTao >= DATE_SUB(CURRENT_DATE, INTERVAL 30 DAY)';
+        break;
+      default:
+        dateCondition = '';
+    }
+
+    // Query hoạt động người dùng - Lấy thống kê hoạt động theo thời gian
+    const activityQuery = `
+      SELECT 
+        DATE(u.ngayTao) as date,
+        COUNT(*) as newUsers,
+        COUNT(CASE WHEN u.vaiTro = 'KHACH_HANG' THEN 1 END) as newCustomers
+      FROM nguoidung u
+      WHERE 1=1 ${dateCondition}
+      GROUP BY DATE(u.ngayTao)
+      ORDER BY date DESC
+      LIMIT 30
+    `;
+
+    const activity = await sequelize.query(activityQuery, {
+      type: QueryTypes.SELECT
+    });
+
+    res.json({
+      success: true,
+      data: activity,
+      message: `Lấy hoạt động người dùng ${period} thành công`
+    });
+  } catch (error) {
+    console.error('Error in getUserActivity:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Lỗi khi lấy hoạt động người dùng',
+      error: error.message
+    });
+  }
+};
+
+// Cập nhật trạng thái hàng loạt
+exports.bulkUpdateUserStatus = async (req, res) => {
+  try {
+    const { userIds, status } = req.body;
+
+    // Validate input - Kiểm tra dữ liệu đầu vào
+    if (!Array.isArray(userIds) || userIds.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Danh sách ID người dùng không hợp lệ'
+      });
+    }
+
+    const validStatuses = ['HOAT_DONG', 'TAM_KHOA', 'DA_KHOA'];
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Trạng thái không hợp lệ'
+      });
+    }
+
+    // Cập nhật hàng loạt bằng SQL
+    const updateQuery = `
+      UPDATE nguoidung 
+      SET trangThai = ?
+      WHERE id_NguoiDung IN (${userIds.map(() => '?').join(',')})
+    `;
+
+    await sequelize.query(updateQuery, {
+      replacements: [status, ...userIds],
+      type: QueryTypes.UPDATE
+    });
+
+    res.json({
+      success: true,
+      message: `Đã cập nhật trạng thái ${userIds.length} người dùng thành ${status}`
+    });
+  } catch (error) {
+    console.error('Error in bulkUpdateUserStatus:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Lỗi khi cập nhật trạng thái hàng loạt',
+      error: error.message
+    });
+  }
+};
+
+// Xóa người dùng hàng loạt
+exports.bulkDeleteUsers = async (req, res) => {
+  try {
+    const { userIds } = req.body;
+
+    if (!Array.isArray(userIds) || userIds.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Danh sách ID người dùng không hợp lệ'
+      });
+    }
+
+    // Xóa hàng loạt bằng Sequelize
+    await User.destroy({
+      where: {
+        id_NguoiDung: userIds
+      }
+    });
+
+    res.json({
+      success: true,
+      message: `Đã xóa ${userIds.length} người dùng thành công`
+    });
+  } catch (error) {
+    console.error('Error in bulkDeleteUsers:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Lỗi khi xóa người dùng hàng loạt',
+      error: error.message
+    });
+  }
+};
+
+// Export users to Excel (tạm thời trả về JSON)
+exports.exportUsersToExcel = async (req, res) => {
+  try {
+    // Lấy tất cả users để export
+    const users = await User.findAll({
+      attributes: ['id_NguoiDung', 'ten', 'email', 'soDienThoai', 'vaiTro', 'trangThai', 'ngayTao']
+    });
+
+    res.json({
+      success: true,
+      data: users,
+      message: `Export ${users.length} người dùng thành công`
+    });
+  } catch (error) {
+    console.error('Error in exportUsersToExcel:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Lỗi khi export người dùng',
+      error: error.message
+    });
+  }
+};
+
+// ===== PASSWORD MANAGEMENT FUNCTIONS =====
+
+// Change Password (for logged-in users)
+const changePassword = async (req, res) => {
+  try {
+    const { currentPassword, newPassword, confirmPassword } = req.body;
+    const userId = req.user?.id || req.body.userId; // From auth middleware or request
+
+    console.log('🔒 Change password request for user:', userId);
+
+    // Validate input
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      return res.status(400).json({
+        success: false,
+        message: 'Vui lòng điền đầy đủ thông tin'
+      });
+    }
+
+    if (newPassword !== confirmPassword) {
+      return res.status(400).json({
+        success: false,
+        message: 'Mật khẩu xác nhận không khớp'
+      });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({
+        success: false,
+        message: 'Mật khẩu mới phải có ít nhất 6 ký tự'
+      });
+    }
+
+    // Find user
+    const user = await User.findByPk(userId);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'Không tìm thấy người dùng'
+      });
+    }
+
+    // Verify current password
+    const isCurrentPasswordValid = await bcrypt.compare(currentPassword, user.matKhau);
+    if (!isCurrentPasswordValid) {
+      return res.status(400).json({
+        success: false,
+        message: 'Mật khẩu hiện tại không đúng'
+      });
+    }
+
+    // Hash new password
+    const salt = await bcrypt.genSalt(10);
+    const hashedNewPassword = await bcrypt.hash(newPassword, salt);
+
+    // Update password
+    await user.update({ matKhau: hashedNewPassword });
+
+    console.log('✅ Password changed successfully for user:', userId);
+
+    res.json({
+      success: true,
+      message: 'Đổi mật khẩu thành công'
+    });
+  } catch (error) {
+    console.error('❌ Change password error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Lỗi hệ thống khi đổi mật khẩu',
+      error: error.message
+    });
+  }
+};
+
+const forgotPassword = async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ success: false, message: 'Vui lòng nhập địa chỉ email' });
+    const user = await User.findOne({ where: { email } });
+    if (!user) return res.status(404).json({ success: false, message: 'Không tìm thấy người dùng với email này' });
+
+    const resetToken = require('crypto').randomBytes(32).toString('hex');
+    user.resetPasswordToken = resetToken;
+    user.resetPasswordExpiry = new Date(Date.now() + 15 * 60 * 1000);
+    await user.save();
+    console.log('✅ Token saved to DB:', user.email, user.resetPasswordToken, user.resetPasswordExpiry);
+
+    const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/reset-password?token=${resetToken}`;
+    const result = await sendResetPasswordEmail(email, resetUrl, user.ten || user.email);
+
+    if (!result.success) {
+      console.log('⚠️ Fallback to mock email.');
+    }
+    // Luôn trả về response cho client
+    return res.json({ success: true, message: 'Đã gửi liên kết đặt lại mật khẩu đến email của bạn!' });
+  } catch (error) {
+    console.error('❌ Forgot password error:', error);
+    res.status(500).json({ success: false, message: 'Lỗi server', error: error.message });
+  }
+};
+
+const resetPassword = async (req, res) => {
+  try {
+    const { token, newPassword, confirmPassword } = req.body;
+    if (!token || !newPassword || !confirmPassword) {
+      return res.status(400).json({ success: false, message: 'Thiếu thông tin' });
+    }
+    if (newPassword !== confirmPassword) {
+      return res.status(400).json({ success: false, message: 'Mật khẩu xác nhận không khớp' });
+    }
+    if (newPassword.length < 6) {
+      return res.status(400).json({ success: false, message: 'Mật khẩu mới phải có ít nhất 6 ký tự' });
+    }
+    // Tìm user theo token
+    const user = await User.findOne({ where: { resetPasswordToken: token } });
+    if (!user || !user.resetPasswordExpiry || user.resetPasswordExpiry < new Date()) {
+      return res.status(400).json({ success: false, message: 'Token không hợp lệ hoặc đã hết hạn' });
+    }
+    // Hash mật khẩu mới
+    const bcrypt = require('bcryptjs');
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    // Cập nhật mật khẩu và xóa token
+    user.matKhau = hashedPassword;
+    user.resetPasswordToken = null;
+    user.resetPasswordExpiry = null;
+    await user.save();
+    return res.json({ success: true, message: 'Đặt lại mật khẩu thành công!' });
+  } catch (error) {
+    console.error('resetPassword error:', error);
+    res.status(500).json({ success: false, message: 'Lỗi server', error: error.message });
+  }
+};
+
+const verifyResetToken = async (req, res) => {
+  try {
+    // Lấy token từ params (route: /auth/verify-reset-token/:token)
+    const token = req.params.token || req.body.token || req.query.token;
+    if (!token) {
+      return res.status(400).json({ success: false, message: 'Token không hợp lệ hoặc đã hết hạn' });
+    }
+    // Tìm user theo token
+    const user = await User.findOne({ where: { resetPasswordToken: token } });
+    if (!user || !user.resetPasswordExpiry || user.resetPasswordExpiry < new Date()) {
+      return res.status(400).json({ success: false, message: 'Token không hợp lệ hoặc đã hết hạn' });
+    }
+    // Token hợp lệ
+    return res.json({ success: true, data: { email: user.email } });
+  } catch (error) {
+    console.error('verifyResetToken error:', error);
+    res.status(500).json({ success: false, message: 'Lỗi server', error: error.message });
+  }
+};
+
+exports.forgotPassword = forgotPassword;
+exports.resetPassword = resetPassword;
+exports.verifyResetToken = verifyResetToken;
+
+// === MODULE EXPORTS - Xuất tất cả functions ===
 module.exports = {
+  // Basic CRUD - Các function cơ bản
   getAll: exports.getAll,
   getById: exports.getById,
   create: exports.create,
   update: exports.update,
   delete: exports.delete,
   getUserStats: exports.getUserStats,
+  
+  // Admin functions - Các function cho admin
+  updateUserStatus: exports.updateUserStatus,
+  getUserOrders: exports.getUserOrders,
+  getUsersSummary: exports.getUsersSummary,
+  getUserActivity: exports.getUserActivity,
+  bulkUpdateUserStatus: exports.bulkUpdateUserStatus,
+  bulkDeleteUsers: exports.bulkDeleteUsers,
+  exportUsersToExcel: exports.exportUsersToExcel,
+  
+  // Auth functions - Các function xác thực
   register,
   login,
   verifyToken,
   logout,
-  updateProfile
+  updateProfile,
+  
+  // Password management functions
+  changePassword,
+  forgotPassword,
+  resetPassword,
+  verifyResetToken
 }; 

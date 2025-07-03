@@ -5,6 +5,9 @@ const categoryController = require('../controllers/categoryController');
 // Get all categories
 router.get('/', categoryController.getAll);
 
+// Get categories with subcategories (for ProductPage filtering)
+router.get('/with-subcategories', categoryController.getAll);
+
 // Get categories with products for navigation menu
 router.get('/with-products', async (req, res) => {
   try {

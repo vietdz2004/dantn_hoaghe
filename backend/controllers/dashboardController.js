@@ -1,4 +1,6 @@
-const { sequelize } = require('../../models/database');
+// Import database connection và QueryTypes từ Sequelize
+// Đường dẫn từ controllers/ đến models/ chỉ cần đi lên 1 cấp (../)
+const { sequelize } = require('../models/database');
 const { QueryTypes } = require('sequelize');
 
 // Dashboard Overview - Thống kê tổng quan

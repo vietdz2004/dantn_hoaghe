@@ -563,10 +563,295 @@ const notifyStaff = async (quickOrder) => {
   }
 };
 
+// === ADMIN FUNCTIONS - Các function dành cho admin ===
+
+// Chuyển đổi đơn đặt nhanh thành đơn hàng chính thức
+const convertToRegularOrder = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { customerId, shippingAddress, paymentMethod } = req.body;
+
+    // Lấy thông tin quick order
+    const quickOrder = await QuickOrder.findByPk(id);
+    if (!quickOrder) {
+      return res.status(404).json({
+        success: false,
+        message: 'Không tìm thấy đơn đặt nhanh'
+      });
+    }
+
+    if (quickOrder.trangThai === 'DA_CHUYEN') {
+      return res.status(400).json({
+        success: false,
+        message: 'Đơn hàng này đã được chuyển thành đơn hàng chính thức'
+      });
+    }
+
+    // TODO: Implement actual order creation logic here
+    // Đây là logic mẫu - cần kết nối với Order model
+    const orderData = {
+      id_NguoiDung: customerId || null,
+      tenKhachHang: quickOrder.tenKhachHang,
+      soDienThoai: quickOrder.soDienThoai,
+      diaChiGiao: shippingAddress || quickOrder.diaChiGiao,
+      phuongThucThanhToan: paymentMethod || 'COD',
+      tongThanhToan: quickOrder.tongTien,
+      trangThaiDonHang: 'CHO_XAC_NHAN',
+      ghiChu: `Chuyển từ đơn đặt nhanh ${quickOrder.maDonNhanh}`
+    };
+
+    // Cập nhật trạng thái quick order
+    await quickOrder.update({ trangThai: 'DA_CHUYEN' });
+
+    res.json({
+      success: true,
+      message: 'Đã chuyển đổi thành đơn hàng chính thức',
+      data: {
+        quickOrderId: id,
+        orderData
+      }
+    });
+
+  } catch (error) {
+    console.error('Error converting quick order:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Lỗi khi chuyển đổi đơn hàng',
+      error: error.message
+    });
+  }
+};
+
+// Cập nhật thông tin đơn đặt nhanh
+const updateQuickOrder = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updateData = req.body;
+
+    const quickOrder = await QuickOrder.findByPk(id);
+    if (!quickOrder) {
+      return res.status(404).json({
+        success: false,
+        message: 'Không tìm thấy đơn đặt nhanh'
+      });
+    }
+
+    // Loại bỏ các field không được phép cập nhật
+    delete updateData.id;
+    delete updateData.maDonNhanh;
+    delete updateData.createdAt;
+
+    await quickOrder.update(updateData);
+
+    res.json({
+      success: true,
+      message: 'Cập nhật đơn đặt nhanh thành công',
+      data: quickOrder
+    });
+
+  } catch (error) {
+    console.error('Error updating quick order:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Lỗi khi cập nhật đơn đặt nhanh',
+      error: error.message
+    });
+  }
+};
+
+// Xóa đơn đặt nhanh
+const deleteQuickOrder = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const quickOrder = await QuickOrder.findByPk(id);
+    if (!quickOrder) {
+      return res.status(404).json({
+        success: false,
+        message: 'Không tìm thấy đơn đặt nhanh'
+      });
+    }
+
+    await quickOrder.destroy();
+
+    res.json({
+      success: true,
+      message: 'Đã xóa đơn đặt nhanh thành công'
+    });
+
+  } catch (error) {
+    console.error('Error deleting quick order:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Lỗi khi xóa đơn đặt nhanh',
+      error: error.message
+    });
+  }
+};
+
+// Cập nhật trạng thái hàng loạt
+const bulkUpdateStatus = async (req, res) => {
+  try {
+    const { orderIds, status } = req.body;
+
+    // Validate input - Kiểm tra dữ liệu đầu vào
+    if (!Array.isArray(orderIds) || orderIds.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Danh sách ID đơn hàng không hợp lệ'
+      });
+    }
+
+    const validStatuses = ['DANG_CHO', 'DA_LIEN_HE', 'HOAN_THANH', 'DA_HUY', 'DA_CHUYEN'];
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Trạng thái không hợp lệ'
+      });
+    }
+
+    // Cập nhật hàng loạt
+    await QuickOrder.update(
+      { trangThai: status },
+      { where: { id: orderIds } }
+    );
+
+    res.json({
+      success: true,
+      message: `Đã cập nhật trạng thái ${orderIds.length} đơn hàng thành ${status}`
+    });
+
+  } catch (error) {
+    console.error('Error bulk updating status:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Lỗi khi cập nhật trạng thái hàng loạt',
+      error: error.message
+    });
+  }
+};
+
+// Chuyển đổi nhiều đơn thành đơn hàng chính thức
+const bulkConvertToRegularOrders = async (req, res) => {
+  try {
+    const { orderIds, paymentMethod = 'COD' } = req.body;
+
+    if (!Array.isArray(orderIds) || orderIds.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Danh sách ID đơn hàng không hợp lệ'
+      });
+    }
+
+    // Lấy danh sách quick orders
+    const quickOrders = await QuickOrder.findAll({
+      where: { id: orderIds }
+    });
+
+    if (quickOrders.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'Không tìm thấy đơn hàng nào'
+      });
+    }
+
+    // Cập nhật trạng thái tất cả thành DA_CHUYEN
+    await QuickOrder.update(
+      { trangThai: 'DA_CHUYEN' },
+      { where: { id: orderIds } }
+    );
+
+    res.json({
+      success: true,
+      message: `Đã chuyển đổi ${quickOrders.length} đơn đặt nhanh thành đơn hàng chính thức`,
+      data: { convertedCount: quickOrders.length }
+    });
+
+  } catch (error) {
+    console.error('Error bulk converting orders:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Lỗi khi chuyển đổi đơn hàng hàng loạt',
+      error: error.message
+    });
+  }
+};
+
+// Xóa nhiều đơn đặt nhanh
+const bulkDeleteQuickOrders = async (req, res) => {
+  try {
+    const { orderIds } = req.body;
+
+    if (!Array.isArray(orderIds) || orderIds.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Danh sách ID đơn hàng không hợp lệ'
+      });
+    }
+
+    // Xóa hàng loạt
+    await QuickOrder.destroy({
+      where: { id: orderIds }
+    });
+
+    res.json({
+      success: true,
+      message: `Đã xóa ${orderIds.length} đơn đặt nhanh thành công`
+    });
+
+  } catch (error) {
+    console.error('Error bulk deleting quick orders:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Lỗi khi xóa đơn hàng hàng loạt',
+      error: error.message
+    });
+  }
+};
+
+// Export quick orders to Excel (tạm thời trả về JSON)
+const exportQuickOrdersToExcel = async (req, res) => {
+  try {
+    // Lấy tất cả quick orders để export
+    const quickOrders = await QuickOrder.findAll({
+      order: [['createdAt', 'DESC']]
+    });
+
+    res.json({
+      success: true,
+      data: quickOrders,
+      message: `Export ${quickOrders.length} đơn đặt nhanh thành công`
+    });
+
+  } catch (error) {
+    console.error('Error exporting quick orders:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Lỗi khi export đơn đặt nhanh',
+      error: error.message
+    });
+  }
+};
+
+// === MODULE EXPORTS - Xuất tất cả functions ===
 module.exports = {
+  // Basic functions - Các function cơ bản
   createQuickOrder,
   getQuickOrders,
   updateQuickOrderStatus,
   getQuickOrderById,
-  getQuickOrderStats
+  getQuickOrderStats,
+  
+  // Admin functions - Các function cho admin
+  convertToRegularOrder,
+  updateQuickOrder,
+  deleteQuickOrder,
+  bulkUpdateStatus,
+  bulkConvertToRegularOrders,
+  bulkDeleteQuickOrders,
+  exportQuickOrdersToExcel,
+  
+  // Alias functions - Tên gọi khác
+  getAllQuickOrders: getQuickOrders, // Alias để tương thích với admin routes
+  getQuickOrdersSummary: getQuickOrderStats // Alias để tương thích với admin routes
 }; 

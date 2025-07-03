@@ -1,13 +1,25 @@
 {
-  "name": "frontend",
-  "private": true,
-  "version": "0.0.0",
+  "name": "hoashop-frontend",
+  "version": "1.0.0",
+  "description": "Frontend cho HoaShop - Website bán hoa trực tuyến",
   "type": "module",
+  "keywords": [
+    "react",
+    "vite",
+    "scss",
+    "material-ui",
+    "ecommerce",
+    "flower-shop",
+    "frontend"
+  ],
+  "author": "HoaShop Team",
+  "license": "MIT",
   "scripts": {
-    "dev": "vite",
+    "dev": "vite --port 3000",
     "build": "vite build",
-    "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "lint": "eslint . --fix",
+    "format": "prettier --write ."
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
@@ -28,7 +40,12 @@
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.19",
     "globals": "^16.0.0",
+    "prettier": "^3.0.0",
     "sass": "^1.89.2",
     "vite": "^6.3.5"
+  },
+  "engines": {
+    "node": ">=16.0.0",
+    "npm": ">=8.0.0"
   }
 }

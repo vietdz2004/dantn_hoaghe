@@ -7,12 +7,12 @@ import { authAPI } from '../services/api';
 
 const ForgotPasswordPage = () => {
   const navigate = useNavigate();
-  const { loading: authLoading } = useAuth();
+  const { loading: authLoading } = useAuth(); // FIXED: Renamed to authLoading
   
   const [email, setEmail] = useState('');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(false); // FIXED: No more conflict
 
   const handleSubmit = async (e) => {
     e.preventDefault();

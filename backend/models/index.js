@@ -1,5 +1,5 @@
 // Import sequelize từ file database.js
-const sequelize = require('./database');
+const { sequelize } = require('./database');
 
 // Import tất cả models
 const User = require('./User');
@@ -12,6 +12,7 @@ const Voucher = require('./Voucher');
 const Review = require('./Review');
 const QuickOrder = require('./QuickOrder');
 const Cart = require('./Cart');
+const Wishlist = require('./Wishlist');
 
 // Thiết lập quan hệ theo cấu trúc database
 // Category - SubCategory: 1-nhiều
@@ -50,6 +51,14 @@ Cart.belongsTo(User, { foreignKey: 'id_NguoiDung' });
 Product.hasMany(Cart, { foreignKey: 'id_SanPham' });
 Cart.belongsTo(Product, { foreignKey: 'id_SanPham' });
 
+// User - Wishlist: 1-nhiều
+User.hasMany(Wishlist, { foreignKey: 'id_NguoiDung' });
+Wishlist.belongsTo(User, { foreignKey: 'id_NguoiDung' });
+
+// Product - Wishlist: 1-nhiều
+Product.hasMany(Wishlist, { foreignKey: 'id_SanPham' });
+Wishlist.belongsTo(Product, { foreignKey: 'id_SanPham' });
+
 // Export tất cả models và sequelize
 module.exports = { 
   sequelize, 
@@ -62,5 +71,6 @@ module.exports = {
   Voucher, 
   Review,
   QuickOrder,
-  Cart
+  Cart,
+  Wishlist
 }; 

@@ -155,6 +155,7 @@ const LoginPage = () => {
               helperText={errors.email}
               disabled={loading}
               required
+              autoComplete="email"
               className={styles.textField}
             />
 

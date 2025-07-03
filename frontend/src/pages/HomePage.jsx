@@ -5,11 +5,11 @@ import BannerSlider from '../components/BannerSlider';
 import CategoryMenu from '../components/CategoryMenu';
 import HomeSection from '../components/HomeSection';
 import ProductList from '../components/ProductList';
-import { categoriesAPI, productsAPI } from '../services/api';
+import SearchHero from '../components/SearchHero';
+import { productsAPI } from '../services/api';
 
 const HomePage = () => {
   const navigate = useNavigate();
-  const [categories, setCategories] = useState([]);
   const [discountProducts, setDiscountProducts] = useState([]);
   const [popularProducts, setPopularProducts] = useState([]);
   const [newProducts, setNewProducts] = useState([]);
@@ -28,14 +28,12 @@ const HomePage = () => {
 
         // Parallel API calls for optimal performance
         const [
-          categoriesResponse,
           discountResponse, 
           popularResponse,
           newResponse,
           bestsellerResponse,
           categoryProductsResponse
         ] = await Promise.all([
-          categoriesAPI.getAll().catch(e => ({ data: [], error: e })),
           productsAPI.getDiscountProducts({ limit: 8 }).catch(e => ({ data: { data: [] }, error: e })),
           productsAPI.getPopularProducts({ limit: 8 }).catch(e => ({ data: { data: [] }, error: e })),
           productsAPI.getNewProducts({ limit: 8 }).catch(e => ({ data: { data: [] }, error: e })),
@@ -46,14 +44,12 @@ const HomePage = () => {
         console.log('📊 API Responses loaded successfully');
 
         // Set data from server responses - Handle both formats
-        const categoriesData = categoriesResponse.data || categoriesResponse || [];
         const discountData = discountResponse.data?.data || discountResponse.data || [];
         const popularData = popularResponse.data?.data || popularResponse.data || [];
         const newData = newResponse.data?.data || newResponse.data || [];
         const bestsellerData = bestsellerResponse.data?.data || bestsellerResponse.data || [];
         const categoryProductSectionsData = categoryProductsResponse.data?.data || categoryProductsResponse.data || [];
 
-        setCategories(categoriesData);
         setDiscountProducts(discountData);
         setPopularProducts(popularData);
         setNewProducts(newData);
@@ -61,7 +57,6 @@ const HomePage = () => {
         setCategoryProductSections(categoryProductSectionsData);
 
         console.log('✅ Data loaded successfully:', {
-          categoriesCount: categoriesData.length,
           discountCount: discountData.length,
           popularCount: popularData.length,
           newCount: newData.length,
@@ -115,6 +110,9 @@ const HomePage = () => {
     <div className={styles.homePage}>
       {/* Banner Slider */}
       <BannerSlider />
+
+      {/* Search Hero Section */}
+      <SearchHero />
 
       {/* Quick Order Button */}
       <div className={styles.quickOrderSection}>

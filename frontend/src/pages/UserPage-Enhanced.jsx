@@ -26,7 +26,7 @@ import {
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 
-// UserPage: Trang quản lý người dùng
+// UserPage: Trang quản lý người dùng với Password Management
 const UserPage = () => {
   const { user, updateProfile, loading } = useAuth();
   const navigate = useNavigate();
@@ -235,7 +235,7 @@ const UserPage = () => {
         </CardContent>
       </Card>
 
-      {/* Security Card - NEW SECTION */}
+      {/* Security Card - PASSWORD MANAGEMENT SECTION */}
       <Card elevation={2}>
         <CardContent sx={{ p: 4 }}>
           <Box display="flex" alignItems="center" gap={2} mb={3}>

@@ -17,6 +17,8 @@ import OrderSuccessPage from './pages/OrderSuccessPage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
+import ChangePasswordPage from './pages/ChangePasswordPage';
+import ResetPasswordPage from './pages/ResetPasswordPage';
 import './App.scss';
 
 // Tạo theme Material-UI với màu hồng chính
@@ -55,6 +57,8 @@ function App() {
                   <Route path="/login" element={<LoginPage />} />
                   <Route path="/register" element={<RegisterPage />} />
                   <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+                  <Route path="/change-password" element={<ChangePasswordPage />} />
+                  <Route path="/reset-password" element={<ResetPasswordPage />} />
                 </Routes>
               </MainLayout>
             } />

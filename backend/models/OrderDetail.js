@@ -1,5 +1,5 @@
 const { DataTypes } = require('sequelize');
-const sequelize = require('./database');
+const { sequelize } = require('./database');
 
 // OrderDetail: Model chi tiết đơn hàng (tương ứng bảng chitietdonhang)
 const OrderDetail = sequelize.define('OrderDetail', {

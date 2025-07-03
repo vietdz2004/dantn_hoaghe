@@ -1,5 +1,5 @@
 const { DataTypes } = require('sequelize');
-const sequelize = require('./database');
+const { sequelize } = require('./database');
 
 // User: Model người dùng (tương ứng bảng nguoidung)
 const User = sequelize.define('User', {
@@ -43,6 +43,14 @@ const User = sequelize.define('User', {
   ngayTao: {
     type: DataTypes.DATE,
     defaultValue: DataTypes.NOW,
+  },
+  resetPasswordToken: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  },
+  resetPasswordExpiry: {
+    type: DataTypes.DATE,
+    allowNull: true,
   },
 }, {
   tableName: 'nguoidung',

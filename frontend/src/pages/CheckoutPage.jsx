@@ -37,7 +37,7 @@ import {
 } from '@mui/icons-material';
 import { useCart } from '../contexts/CartContext';
 import { useAuth } from '../contexts/AuthContext';
-import { ordersAPI } from '../services/api';
+import { orderAPI } from '../services/api';
 import styles from './CheckoutPage.module.scss';
 
 const CheckoutPage = () => {
@@ -183,6 +183,7 @@ const CheckoutPage = () => {
     try {
       const orderData = {
         // Thông tin khách hàng
+        id_NguoiDung: user?.id_NguoiDung,
         hoTen: formData.hoTen,
         email: formData.email,
         soDienThoai: formData.soDienThoai,
@@ -195,18 +196,10 @@ const CheckoutPage = () => {
         ngayGiao: formData.ngayGiao,
         gioGiao: formData.gioGiao,
         
-        // Thanh toán
-        phuongThucThanhToan: formData.phuongThucThanhToan,
-        
-        // Sản phẩm
-        sanPham: cartItems.map(item => ({
-          id_SanPham: item.id_SanPham,
-          tenSp: item.tenSp,
-          soLuong: item.soLuong,
-          gia: item.giaKhuyenMai || item.gia,
-          thanhTien: (item.giaKhuyenMai || item.gia) * item.soLuong,
-          hinhAnh: item.hinhAnh
-        })),
+        // Thanh toán và trạng thái
+        phuongThucThanhToan: formData.phuongThucThanhToan.toUpperCase(),
+        trangThaiDonHang: 'CHO_XAC_NHAN',
+        trangThaiThanhToan: 'CHUA_THANH_TOAN',
         
         // Tổng tiền
         tongTienHang: getTotalPrice(),
@@ -215,25 +208,65 @@ const CheckoutPage = () => {
         tongThanhToan: calculateTotal(),
         
         // Voucher
-        maVoucher: formData.maVoucher
+        maVoucher: formData.maVoucher,
+        
+        // Chi tiết đơn hàng cho backend
+        chiTietDonHang: cartItems.map(item => ({
+          id_SanPham: item.id_SanPham,
+          soLuong: item.soLuong || item.quantity || 1,
+          giaTaiThoiDiem: item.giaKhuyenMai || item.gia,
+          thanhTien: (item.giaKhuyenMai || item.gia) * (item.soLuong || item.quantity || 1)
+        }))
       };
 
-      // Call API to create order
-      console.log('Order data:', orderData);
-      const response = await ordersAPI.create(orderData);
+      // Call real API to create order
+      console.log('Submitting order to backend:', orderData);
+      const response = await orderAPI.createOrder(orderData);
       
-      // Clear cart and redirect
-      clearCart();
-      navigate('/orders/success', { 
-        state: { 
-          orderData,
-          message: 'Đặt hàng thành công! Chúng tôi sẽ liên hệ với bạn sớm nhất.' 
-        }
-      });
+      if (response.data) {
+        console.log('Order created successfully:', response.data);
+        
+        // Prepare data for success page
+        const successData = {
+          ...orderData,
+          id_DonHang: response.data.id_DonHang,
+          maDonHang: response.data.maDonHang || `DH${Date.now()}`,
+          
+          // Product list for display
+          sanPham: cartItems.map(item => ({
+            id_SanPham: item.id_SanPham,
+            tenSp: item.tenSp,
+            soLuong: item.soLuong || item.quantity || 1,
+            gia: item.giaKhuyenMai || item.gia,
+            thanhTien: (item.giaKhuyenMai || item.gia) * (item.soLuong || item.quantity || 1),
+            hinhAnh: item.hinhAnh
+          }))
+        };
+        
+        // Clear cart and redirect to success page
+        clearCart();
+        navigate('/orders/success', { 
+          state: { 
+            orderData: successData,
+            message: 'Đặt hàng thành công! Chúng tôi sẽ liên hệ với bạn sớm nhất để xác nhận đơn hàng.' 
+          }
+        });
+      }
       
     } catch (error) {
       console.error('Error submitting order:', error);
-      setErrors({ submit: 'Có lỗi xảy ra khi đặt hàng. Vui lòng thử lại.' });
+      
+      let errorMessage = 'Có lỗi xảy ra khi đặt hàng. Vui lòng thử lại.';
+      
+      if (error.response) {
+        // Backend responded with error
+        errorMessage = error.response.data?.message || errorMessage;
+      } else if (error.request) {
+        // Network error
+        errorMessage = 'Không thể kết nối đến server. Vui lòng kiểm tra kết nối internet.';
+      }
+      
+      setErrors({ submit: errorMessage });
     } finally {
       setIsSubmitting(false);
     }

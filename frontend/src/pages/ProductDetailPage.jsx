@@ -5,6 +5,7 @@ import { productsAPI } from '../services/api';
 import styles from './ProductDetailPage.module.scss';
 
 import ProductList from '../components/ProductList';
+import ReviewForm from '../components/ReviewForm';
 import { 
   Box, 
   Typography, 
@@ -68,13 +69,13 @@ const ProductDetailPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [quantity, setQuantity] = useState(1);
-  const [selectedImage, setSelectedImage] = useState(0);
   const [showNotification, setShowNotification] = useState(false);
   const [notificationMessage, setNotificationMessage] = useState('');
   const [isFavorite, setIsFavorite] = useState(false);
   const [imageLoading, setImageLoading] = useState(true);
   const [imageError, setImageError] = useState(false);
   const [userHasPurchased, setUserHasPurchased] = useState(false);
+  const [showReviewForm, setShowReviewForm] = useState(false);
 
   useEffect(() => {
     const fetchProduct = async () => {
@@ -85,8 +86,8 @@ const ProductDetailPage = () => {
         // Handle both response formats: {success: true, data: {}} and direct data
         const productData = res.data.success ? res.data.data : res.data;
         setProduct(productData);
-      } catch (error) {
-        console.error('Error fetching product:', error);
+      } catch (err) {
+        console.error('Error fetching product:', err);
         setError('Không tìm thấy sản phẩm');
       } finally {
         setLoading(false);
@@ -104,8 +105,8 @@ const ProductDetailPage = () => {
         // Handle both response formats
         const reviewsData = res.data.success ? res.data.data : res.data;
         setReviews(Array.isArray(reviewsData) ? reviewsData : []);
-      } catch (error) {
-        console.error('Error fetching reviews:', error);
+      } catch (err) {
+        console.error('Error fetching reviews:', err);
         setReviews([]);
       }
     };
@@ -119,8 +120,8 @@ const ProductDetailPage = () => {
         // Handle both response formats
         const relatedData = res.data.success ? res.data.data : res.data;
         setRelatedProducts(Array.isArray(relatedData) ? relatedData : []);
-      } catch (error) {
-        console.error('Error fetching related products:', error);
+      } catch (err) {
+        console.error('Error fetching related products:', err);
         setRelatedProducts([]);
       }
     };
@@ -160,7 +161,7 @@ const ProductDetailPage = () => {
       addToCart(product, quantity);
       setNotificationMessage(`Đã thêm ${quantity} sản phẩm vào giỏ hàng!`);
       setShowNotification(true);
-    } catch (error) {
+    } catch {
       setNotificationMessage('Có lỗi khi thêm vào giỏ hàng');
       setShowNotification(true);
     }
@@ -183,8 +184,6 @@ const ProductDetailPage = () => {
     // Chuyển đến trang thanh toán
     navigate('/checkout');
   };
-
-
 
   // Handler yêu thích
   const handleToggleFavorite = () => {
@@ -219,6 +218,41 @@ const ProductDetailPage = () => {
   // Handler khi click vào sản phẩm liên quan
   const handleRelatedProductClick = (relatedProduct) => {
     navigate(`/products/${relatedProduct.id_SanPham}`);
+  };
+
+  // Handler mở form viết đánh giá
+  const handleOpenReviewForm = () => {
+    if (!user) {
+      navigate('/login', {
+        state: {
+          returnUrl: `/products/${id}`,
+          message: 'Vui lòng đăng nhập để viết đánh giá'
+        }
+      });
+      return;
+    }
+    setShowReviewForm(true);
+  };
+
+  // Handler đóng form viết đánh giá
+  const handleCloseReviewForm = () => {
+    setShowReviewForm(false);
+  };
+
+  // Handler sau khi submit đánh giá thành công
+  const handleReviewSubmitted = async () => {
+    try {
+      // Refresh danh sách đánh giá
+      const res = await api.get(`/products/${id}/reviews`);
+      const reviewsData = res.data.success ? res.data.data : res.data;
+      setReviews(Array.isArray(reviewsData) ? reviewsData : []);
+      
+      // Hiện thông báo thành công
+      setNotificationMessage('Đánh giá của bạn đã được gửi thành công!');
+      setShowNotification(true);
+    } catch (err) {
+      console.error('Error refreshing reviews:', err);
+    }
   };
 
   if (loading) return <Box className={styles.loading}>Đang tải...</Box>;
@@ -470,6 +504,7 @@ const ProductDetailPage = () => {
                 size="small"
                 className={styles.reviewBtn}
                 startIcon={<Description />}
+                onClick={handleOpenReviewForm}
               >
                 Viết đánh giá
               </Button>
@@ -530,7 +565,15 @@ const ProductDetailPage = () => {
         </Box>
       )}
 
-
+      {/* Review Form Modal */}
+      <ReviewForm
+        open={showReviewForm}
+        onClose={handleCloseReviewForm}
+        productId={product.id_SanPham}
+        productName={product.tenSp}
+        userHasPurchased={userHasPurchased}
+        onReviewSubmitted={handleReviewSubmitted}
+      />
 
       {/* Notification Snackbar */}
       <Snackbar

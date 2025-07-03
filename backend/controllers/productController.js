@@ -628,7 +628,7 @@ exports.getRelatedProducts = async (req, res) => {
   }
 };
 
-// Search products
+// Search products with improved relevance algorithm
 exports.searchProducts = async (req, res) => {
   try {
     const {
@@ -638,21 +638,41 @@ exports.searchProducts = async (req, res) => {
       category,
       minPrice,
       maxPrice,
-      sortBy = 'id_SanPham'
+      sortBy = 'relevance_score'
     } = req.query;
     
-    if (!searchTerm) {
+    if (!searchTerm || searchTerm.trim().length === 0) {
       return res.status(400).json({
         success: false,
         message: 'Từ khóa tìm kiếm không được để trống'
       });
     }
     
-    const whereConditions = [
-      '(p.tenSp LIKE ? OR p.moTa LIKE ? OR p.thuongHieu LIKE ?)'
-    ];
-    const queryParams = [`%${searchTerm}%`, `%${searchTerm}%`, `%${searchTerm}%`];
+    console.log('🔍 Search query:', { searchTerm, page, limit, category, minPrice, maxPrice });
     
+    const cleanSearchTerm = searchTerm.trim().toLowerCase();
+    
+    // Build WHERE conditions with improved relevance scoring
+    const whereConditions = [
+      'p.trangThai = "active"', // Only search active products
+      `(
+        p.tenSp LIKE ? OR 
+        p.moTa LIKE ? OR 
+        p.thuongHieu LIKE ? OR
+        c.tenDanhMuc LIKE ? OR
+        sc.tenDanhMucChiTiet LIKE ?
+      )`
+    ];
+    
+    const queryParams = [
+      `%${cleanSearchTerm}%`, // tenSp
+      `%${cleanSearchTerm}%`, // moTa  
+      `%${cleanSearchTerm}%`, // thuongHieu
+      `%${cleanSearchTerm}%`, // tenDanhMuc
+      `%${cleanSearchTerm}%`  // tenDanhMucChiTiet
+    ];
+    
+    // Additional filters
     if (category) {
       whereConditions.push('c.id_DanhMuc = ?');
       queryParams.push(category);
@@ -671,35 +691,98 @@ exports.searchProducts = async (req, res) => {
     const whereClause = `WHERE ${whereConditions.join(' AND ')}`;
     const offset = (parseInt(page) - 1) * parseInt(limit);
     
+    // Improved query with relevance scoring
     const query = `
       SELECT 
         p.*,
         sc.tenDanhMucChiTiet,
         c.tenDanhMuc,
-        COALESCE(p.giaKhuyenMai, p.gia) as effectivePrice
+        COALESCE(p.giaKhuyenMai, p.gia) as effectivePrice,
+        CASE 
+          WHEN p.giaKhuyenMai IS NOT NULL AND p.giaKhuyenMai > 0 AND p.giaKhuyenMai < p.gia 
+          THEN ROUND(((p.gia - p.giaKhuyenMai) / p.gia) * 100, 0)
+          ELSE 0 
+        END as discountPercent,
+        (
+          CASE 
+            -- Exact match in product name gets highest score
+            WHEN LOWER(p.tenSp) = ? THEN 100
+            WHEN LOWER(p.tenSp) LIKE ? THEN 90
+            -- Partial match at beginning of product name
+            WHEN LOWER(p.tenSp) LIKE ? THEN 80
+            -- Match in category name
+            WHEN LOWER(c.tenDanhMuc) LIKE ? THEN 70
+            WHEN LOWER(sc.tenDanhMucChiTiet) LIKE ? THEN 65
+            -- Match in brand
+            WHEN LOWER(p.thuongHieu) LIKE ? THEN 60
+            -- Match in description
+            WHEN LOWER(p.moTa) LIKE ? THEN 50
+            -- Partial match anywhere in product name
+            WHEN LOWER(p.tenSp) LIKE ? THEN 40
+            ELSE 10
+          END
+          -- Boost score for products with good inventory
+          + CASE WHEN p.soLuongTon > 0 THEN 5 ELSE 0 END
+          -- Boost score for discounted products
+          + CASE WHEN p.giaKhuyenMai IS NOT NULL AND p.giaKhuyenMai < p.gia THEN 3 ELSE 0 END
+        ) as relevance_score
       FROM sanpham p
       LEFT JOIN danhmucchitiet sc ON p.id_DanhMucChiTiet = sc.id_DanhMucChiTiet
       LEFT JOIN danhmuc c ON sc.id_DanhMuc = c.id_DanhMuc
       ${whereClause}
-      ORDER BY p.${sortBy} DESC
+      ORDER BY relevance_score DESC, p.soLuongTon DESC, p.id_SanPham DESC
       LIMIT ? OFFSET ?
     `;
     
-    queryParams.push(parseInt(limit), offset);
+    // Add parameters for relevance scoring
+    const scoringParams = [
+      cleanSearchTerm,           // Exact match
+      `%${cleanSearchTerm}%`,    // Full word match  
+      `${cleanSearchTerm}%`,     // Starts with
+      `%${cleanSearchTerm}%`,    // Category match
+      `%${cleanSearchTerm}%`,    // Subcategory match
+      `%${cleanSearchTerm}%`,    // Brand match
+      `%${cleanSearchTerm}%`,    // Description match
+      `%${cleanSearchTerm}%`     // Anywhere in name
+    ];
+    
+    const allParams = [...scoringParams, ...queryParams, parseInt(limit), offset];
+    
+    console.log('🔍 Executing search with params:', { 
+      searchTerm: cleanSearchTerm, 
+      totalParams: allParams.length,
+      conditions: whereConditions.length 
+    });
     
     const products = await sequelize.query(query, {
-      replacements: queryParams,
+      replacements: allParams,
       type: QueryTypes.SELECT
+    });
+    
+    console.log('📊 Search results:', { 
+      searchTerm: cleanSearchTerm,
+      found: products.length,
+      topResults: products.slice(0, 3).map(p => ({ 
+        name: p.tenSp, 
+        score: p.relevance_score,
+        category: p.tenDanhMuc 
+      }))
     });
     
     res.json({
       success: true,
       data: products,
-      searchTerm,
-      message: `Tìm thấy ${products.length} sản phẩm`
+      searchTerm: cleanSearchTerm,
+      message: `Tìm thấy ${products.length} sản phẩm phù hợp với "${cleanSearchTerm}"`,
+      metadata: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        hasResults: products.length > 0,
+        algorithm: 'Enhanced relevance scoring v2.0'
+      }
     });
   } catch (error) {
-    console.error('Error in searchProducts:', error);
+    console.error('❌ Error in searchProducts:', error);
     res.status(500).json({
       success: false,
       message: 'Lỗi server khi tìm kiếm sản phẩm',

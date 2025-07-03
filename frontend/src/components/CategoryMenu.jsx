@@ -59,12 +59,12 @@ const CategoryMenu = ({ isSticky = false }) => {
     if (window.innerWidth <= 768 && cat.SubCategories && cat.SubCategories.length > 0) {
       setOpenSub(openSub === cat.id_DanhMuc ? null : cat.id_DanhMuc);
     } else {
-      navigate(`/products?cat=${cat.id_DanhMuc}`);
+      navigate(`/products?category=${cat.id_DanhMuc}`);
       setOpen(false); setOpenSub(null);
     }
   };
   const handleSubClick = (sub) => {
-    navigate(`/products?subcat=${sub.id_DanhMucChiTiet}`);
+    navigate(`/products?subcategory=${sub.id_DanhMucChiTiet}`);
     setOpen(false); setOpenSub(null);
   };
 

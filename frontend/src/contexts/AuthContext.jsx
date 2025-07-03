@@ -21,24 +21,28 @@ export const AuthProvider = ({ children }) => {
     const checkAuth = async () => {
       try {
         const token = localStorage.getItem('token');
-        if (!token) {
+        const savedUser = localStorage.getItem('user');
+        
+        if (!token || !savedUser) {
           setLoading(false);
           return;
         }
 
-        // Verify token with server
-        const response = await authAPI.verifyToken();
-        console.log('🔍 Verify token response:', response.data);
+        try {
+          const userData = JSON.parse(savedUser);
+          console.log('🔍 Restored user from localStorage:', userData);
         
-        if (response.data.success) {
-          setUser(response.data.data.user);
+          setUser(userData);
           setIsAuthenticated(true);
-        } else {
+        } catch (parseError) {
+          console.error('Error parsing saved user data:', parseError);
           localStorage.removeItem('token');
+          localStorage.removeItem('user');
         }
       } catch (error) {
         console.error('Auth check failed:', error);
         localStorage.removeItem('token');
+        localStorage.removeItem('user');
       } finally {
         setLoading(false);
       }
@@ -61,8 +65,9 @@ export const AuthProvider = ({ children }) => {
         console.log('👤 User data:', user);
         console.log('🔑 Token received:', token ? 'Yes' : 'No');
         
-        // Store token in localStorage
+        // Store token and user in localStorage
         localStorage.setItem('token', token);
+        localStorage.setItem('user', JSON.stringify(user));
         
         // Update state
         setUser(user);
@@ -97,8 +102,9 @@ export const AuthProvider = ({ children }) => {
         console.log('👤 User data:', user);
         console.log('🔑 Token received:', token ? 'Yes' : 'No');
         
-        // Store token in localStorage
+        // Store token and user in localStorage
         localStorage.setItem('token', token);
+        localStorage.setItem('user', JSON.stringify(user));
         
         // Update state
         setUser(user);
@@ -122,12 +128,14 @@ export const AuthProvider = ({ children }) => {
   // Logout function
   const logout = async () => {
     try {
-      await authAPI.logout();
+      // Don't call API logout since we don't have this endpoint
+      console.log('Logging out user...');
     } catch (error) {
       console.error('Logout error:', error);
     } finally {
       // Clear local state regardless of API response
       localStorage.removeItem('token');
+      localStorage.removeItem('user');
       setUser(null);
       setIsAuthenticated(false);
     }
@@ -140,8 +148,10 @@ export const AuthProvider = ({ children }) => {
       const response = await authAPI.updateProfile(profileData);
       
       if (response.data.success) {
-        setUser(response.data.data.user);
-        return { success: true, user: response.data.data.user };
+        const updatedUser = response.data.data.user;
+        localStorage.setItem('user', JSON.stringify(updatedUser));
+        setUser(updatedUser);
+        return { success: true, user: updatedUser };
       } else {
         return { success: false, message: response.data.message };
       }

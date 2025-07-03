@@ -1,5 +1,5 @@
 const { DataTypes } = require('sequelize');
-const sequelize = require('./database');
+const { sequelize } = require('./database');
 
 // Category: Model danh mục chính (tương ứng bảng danhmuc)
 const Category = sequelize.define('Category', {

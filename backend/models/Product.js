@@ -1,5 +1,5 @@
 const { DataTypes } = require('sequelize');
-const sequelize = require('./database');
+const { sequelize } = require('./database');
 
 // Product: Model sản phẩm (tương ứng bảng sanpham)
 const Product = sequelize.define('Product', {

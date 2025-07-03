@@ -2,34 +2,36 @@ import React, { createContext, useContext, useReducer, useEffect, useState, useC
 import { cartAPI } from '../services/api';
 import { useAuth } from './AuthContext';
 
-// Cart Context
+// ============================================
+// CART CONTEXT - Quản lý giỏ hàng toàn cục
+// ============================================
+
 const CartContext = createContext();
 
-// Cart Actions
+// Các hành động có thể thực hiện với giỏ hàng
 const CART_ACTIONS = {
-  ADD_ITEM: 'ADD_ITEM',
-  REMOVE_ITEM: 'REMOVE_ITEM',
-  UPDATE_QUANTITY: 'UPDATE_QUANTITY',
-  CLEAR_CART: 'CLEAR_CART',
-  LOAD_CART: 'LOAD_CART',
-  SET_LOADING: 'SET_LOADING'
+  ADD_ITEM: 'ADD_ITEM',           // Thêm sản phẩm vào giỏ
+  REMOVE_ITEM: 'REMOVE_ITEM',     // Xóa sản phẩm khỏi giỏ
+  UPDATE_QUANTITY: 'UPDATE_QUANTITY', // Cập nhật số lượng
+  CLEAR_CART: 'CLEAR_CART',       // Xóa toàn bộ giỏ hàng
+  LOAD_CART: 'LOAD_CART',         // Tải giỏ hàng từ DB/localStorage
+  SET_LOADING: 'SET_LOADING'      // Cập nhật trạng thái loading
 };
 
-// Cart Reducer
+// ============================================
+// CART REDUCER - Xử lý logic cập nhật state
+// ============================================
 const cartReducer = (state, action) => {
   switch (action.type) {
-    case CART_ACTIONS.SET_LOADING: {
-      return {
-        ...state,
-        loading: action.payload
-      };
-    }
+    case CART_ACTIONS.SET_LOADING:
+      return { ...state, loading: action.payload };
 
     case CART_ACTIONS.ADD_ITEM: {
       const { product, quantity = 1 } = action.payload;
       const existingItem = state.items.find(item => item.id_SanPham === product.id_SanPham);
       
       if (existingItem) {
+        // Nếu sản phẩm đã có, tăng số lượng
         return {
           ...state,
           items: state.items.map(item =>
@@ -39,6 +41,7 @@ const cartReducer = (state, action) => {
           )
         };
       } else {
+        // Thêm sản phẩm mới vào giỏ
         const cartItem = {
           id_SanPham: product.id_SanPham,
           tenSp: product.tenSp,
@@ -50,23 +53,20 @@ const cartReducer = (state, action) => {
           thuongHieu: product.thuongHieu || ''
         };
         
-        return {
-          ...state,
-          items: [...state.items, cartItem]
-        };
+        return { ...state, items: [...state.items, cartItem] };
       }
     }
 
-    case CART_ACTIONS.REMOVE_ITEM: {
+    case CART_ACTIONS.REMOVE_ITEM:
       return {
         ...state,
         items: state.items.filter(item => item.id_SanPham !== action.payload.productId)
       };
-    }
 
     case CART_ACTIONS.UPDATE_QUANTITY: {
       const { productId, quantity } = action.payload;
       
+      // Nếu số lượng <= 0, xóa sản phẩm
       if (quantity <= 0) {
         return {
           ...state,
@@ -74,6 +74,7 @@ const cartReducer = (state, action) => {
         };
       }
       
+      // Cập nhật số lượng mới
       return {
         ...state,
         items: state.items.map(item =>
@@ -84,60 +85,37 @@ const cartReducer = (state, action) => {
       };
     }
 
-    case CART_ACTIONS.CLEAR_CART: {
-      return {
-        ...state,
-        items: []
-      };
-    }
+    case CART_ACTIONS.CLEAR_CART:
+      return { ...state, items: [] };
 
-    case CART_ACTIONS.LOAD_CART: {
-      return {
-        ...state,
-        items: action.payload.items || []
-      };
-    }
+    case CART_ACTIONS.LOAD_CART:
+      return { ...state, items: action.payload.items || [] };
 
     default:
       return state;
   }
 };
 
-// Initial State
+// State ban đầu của giỏ hàng
 const initialState = {
   items: [],
   loading: false
 };
 
-// Cart Provider Component
+// ============================================
+// CART PROVIDER - Component cung cấp context
+// ============================================
 export const CartProvider = ({ children }) => {
   const [state, dispatch] = useReducer(cartReducer, initialState);
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [isInitialized, setIsInitialized] = useState(false);
   const [currentUserId, setCurrentUserId] = useState(null);
 
-  // Load cart from database
-  const loadCartFromDatabase = useCallback(async (userId) => {
-    if (!userId) return;
-    
-    try {
-      dispatch({ type: CART_ACTIONS.SET_LOADING, payload: true });
-      const response = await cartAPI.getCartItems(userId);
-      
-      if (response.data.success) {
-        dispatch({
-          type: CART_ACTIONS.LOAD_CART,
-          payload: { items: response.data.data.items }
-        });
-      }
-    } catch (error) {
-      console.error('Error loading cart from database:', error);
-    } finally {
-      dispatch({ type: CART_ACTIONS.SET_LOADING, payload: false });
-    }
-  }, []);
+  // ============================================
+  // CÁC HELPER FUNCTIONS - Hàm tiện ích (thứ tự đúng)
+  // ============================================
 
-  // Load cart from localStorage
+  // Tải giỏ hàng từ localStorage cho guest user (định nghĩa trước)
   const loadCartFromLocalStorage = useCallback(() => {
     try {
       const savedCart = localStorage.getItem('hoashop_cart');
@@ -147,50 +125,93 @@ export const CartProvider = ({ children }) => {
           type: CART_ACTIONS.LOAD_CART,
           payload: { items: cartData.items || [] }
         });
+        console.log('✅ Tải giỏ hàng từ localStorage thành công:', cartData.items?.length || 0, 'items');
       }
     } catch (error) {
-      console.error('Error loading cart from localStorage:', error);
+      console.error('❌ Lỗi tải giỏ hàng từ localStorage:', error);
     }
   }, []);
 
-  // Save cart to localStorage
+  // Tải giỏ hàng từ database cho user đã đăng nhập (định nghĩa sau)
+  const loadCartFromDatabase = useCallback(async (userId) => {
+    if (!userId) return;
+    
+    try {
+      dispatch({ type: CART_ACTIONS.SET_LOADING, payload: true });
+      const response = await cartAPI.get();
+      
+      if (response.data.success) {
+        // Backend trả về format: { success: true, data: { items: [...], totalItems, totalAmount } }
+        const cartItems = response.data.data?.items || [];
+        dispatch({
+          type: CART_ACTIONS.LOAD_CART,
+          payload: { items: cartItems }
+        });
+        console.log('✅ Tải giỏ hàng từ database thành công:', cartItems.length, 'items');
+      }
+    } catch (error) {
+      console.error('❌ Lỗi tải giỏ hàng từ database:', error);
+      // Nếu user chưa đăng nhập, fallback về localStorage
+      if (error.message?.includes('must be logged in')) {
+        console.log('🔄 Fallback to localStorage cart...');
+        loadCartFromLocalStorage();
+      }
+    } finally {
+      dispatch({ type: CART_ACTIONS.SET_LOADING, payload: false });
+    }
+  }, [loadCartFromLocalStorage]);
+
+  // Lưu giỏ hàng vào localStorage (chỉ cho guest user)
   const saveCartToLocalStorage = useCallback(() => {
     try {
       localStorage.setItem('hoashop_cart', JSON.stringify(state));
     } catch (error) {
-      console.error('Error saving cart to localStorage:', error);
+      console.error('❌ Lỗi lưu giỏ hàng vào localStorage:', error);
     }
   }, [state]);
 
-  // Sync localStorage cart to database when user logs in
+  // Đồng bộ giỏ hàng từ localStorage lên database khi user đăng nhập
   const syncLocalStorageToDatabase = useCallback(async (userId, localItems) => {
     if (!userId || !localItems.length) return;
 
     try {
-      await cartAPI.syncCartFromLocalStorage({
-        userId,
-        cartItems: localItems
-      });
-      
-      // Clear localStorage after successful sync
-      localStorage.removeItem('hoashop_cart');
+      console.log('🔄 Syncing', localItems.length, 'items from localStorage to database...');
+      await cartAPI.sync(localItems);
+      localStorage.removeItem('hoashop_cart'); // Xóa localStorage sau khi sync thành công
+      console.log('✅ Cart sync completed successfully');
     } catch (error) {
-      console.error('Error syncing cart to database:', error);
+      console.error('❌ Lỗi đồng bộ giỏ hàng lên database:', error);
     }
   }, []);
 
-  // Handle user state changes (login/logout)
+  // ============================================
+  // EFFECTS - Xử lý side effects
+  // ============================================
+
+  // Khởi tạo giỏ hàng khi user thay đổi (login/logout)
   useEffect(() => {
+    // ⚠️ CHỜ AUTH LOADING HOÀN THÀNH TRƯỚC KHI KHỞI TẠO CART
+    if (authLoading) {
+      console.log('⏳ Waiting for auth to complete...');
+      return;
+    }
+
     const initializeCart = async () => {
       const newUserId = user?.id_NguoiDung;
       
-      // Skip if same user or not initialized yet
-      if (currentUserId === newUserId && isInitialized) return;
+      console.log('🚀 Initializing cart for user:', newUserId || 'guest');
+      
+      // Bỏ qua nếu cùng user hoặc chưa khởi tạo
+      if (currentUserId === newUserId && isInitialized) {
+        console.log('⏭️ Skipping cart initialization - same user');
+        return;
+      }
       
       setCurrentUserId(newUserId);
       
       if (newUserId) {
-        // User logged in
+        // User đã đăng nhập
+        console.log('👤 User logged in - loading cart from database...');
         const localCart = localStorage.getItem('hoashop_cart');
         let localItems = [];
         
@@ -200,133 +221,115 @@ export const CartProvider = ({ children }) => {
             localItems = cartData.items || [];
           }
         } catch (error) {
-          console.error('Error parsing localStorage cart:', error);
+          console.error('❌ Lỗi parse localStorage cart:', error);
         }
         
-        // If user has items in localStorage, sync them first
+        // Đồng bộ localStorage nếu có items
         if (localItems.length > 0) {
           await syncLocalStorageToDatabase(newUserId, localItems);
         }
         
-        // Load cart from database
+        // Tải giỏ hàng từ database
         await loadCartFromDatabase(newUserId);
         
       } else {
-        // User logged out or not logged in
-        // Clear current cart and load from localStorage
+        // User chưa đăng nhập hoặc đã logout
+        console.log('👤 Guest user - loading cart from localStorage...');
         dispatch({ type: CART_ACTIONS.CLEAR_CART });
         loadCartFromLocalStorage();
       }
       
       if (!isInitialized) {
         setIsInitialized(true);
+        console.log('✅ Cart initialization completed');
       }
     };
 
     initializeCart();
-  }, [user?.id_NguoiDung, loadCartFromDatabase, loadCartFromLocalStorage, syncLocalStorageToDatabase, currentUserId, isInitialized]);
+  }, [authLoading, user?.id_NguoiDung, loadCartFromDatabase, loadCartFromLocalStorage, 
+      syncLocalStorageToDatabase, currentUserId, isInitialized]);
 
-  // Save to localStorage when cart changes (only for non-logged-in users)
+  // Lưu vào localStorage khi giỏ hàng thay đổi (chỉ cho guest user)
   useEffect(() => {
-    if (isInitialized && !user?.id_NguoiDung) {
+    if (isInitialized && !authLoading && !user?.id_NguoiDung) {
       saveCartToLocalStorage();
     }
-  }, [state, user?.id_NguoiDung, isInitialized, saveCartToLocalStorage]);
+  }, [state, user?.id_NguoiDung, isInitialized, authLoading, saveCartToLocalStorage]);
 
-  // Cart actions
+  // ============================================
+  // CART ACTIONS - Các hành động với giỏ hàng
+  // ============================================
+
+  // Thêm sản phẩm vào giỏ hàng
   const addToCart = async (product, quantity = 1) => {
     if (user?.id_NguoiDung) {
-      // User is logged in - save to database
+      // User đã đăng nhập - lưu vào database
       try {
-        await cartAPI.addToCart({
-          userId: user.id_NguoiDung,
-          productId: product.id_SanPham,
-          quantity
-        });
-        
-        // Reload cart from database
+        await cartAPI.add(product.id_SanPham, quantity);
         await loadCartFromDatabase(user.id_NguoiDung);
       } catch (error) {
-        console.error('Error adding to cart:', error);
-        // Fallback to local state
-        dispatch({
-          type: CART_ACTIONS.ADD_ITEM,
-          payload: { product, quantity }
-        });
+        console.error('❌ Lỗi thêm vào giỏ hàng:', error);
+        // Fallback về local state
+        dispatch({ type: CART_ACTIONS.ADD_ITEM, payload: { product, quantity } });
       }
     } else {
-      // User not logged in - update local state
-      dispatch({
-        type: CART_ACTIONS.ADD_ITEM,
-        payload: { product, quantity }
-      });
+      // Guest user - cập nhật local state
+      dispatch({ type: CART_ACTIONS.ADD_ITEM, payload: { product, quantity } });
     }
   };
 
+  // Xóa sản phẩm khỏi giỏ hàng
   const removeFromCart = async (productId) => {
     if (user?.id_NguoiDung) {
       try {
-        await cartAPI.removeFromCart(user.id_NguoiDung, productId);
-        dispatch({
-          type: CART_ACTIONS.REMOVE_ITEM,
-          payload: { productId }
-        });
+        await cartAPI.remove(productId);
+        dispatch({ type: CART_ACTIONS.REMOVE_ITEM, payload: { productId } });
       } catch (error) {
-        console.error('Error removing from cart:', error);
-        dispatch({
-          type: CART_ACTIONS.REMOVE_ITEM,
-          payload: { productId }
-        });
+        console.error('❌ Lỗi xóa khỏi giỏ hàng:', error);
+        dispatch({ type: CART_ACTIONS.REMOVE_ITEM, payload: { productId } });
       }
     } else {
-      dispatch({
-        type: CART_ACTIONS.REMOVE_ITEM,
-        payload: { productId }
-      });
+      dispatch({ type: CART_ACTIONS.REMOVE_ITEM, payload: { productId } });
     }
   };
 
+  // Cập nhật số lượng sản phẩm
   const updateQuantity = async (productId, quantity) => {
     if (user?.id_NguoiDung) {
       try {
         if (quantity <= 0) {
           await removeFromCart(productId);
         } else {
-          await cartAPI.updateCartItem(user.id_NguoiDung, productId, { quantity });
-          dispatch({
-            type: CART_ACTIONS.UPDATE_QUANTITY,
-            payload: { productId, quantity }
-          });
+          await cartAPI.update(productId, quantity);
+          dispatch({ type: CART_ACTIONS.UPDATE_QUANTITY, payload: { productId, quantity } });
         }
       } catch (error) {
-        console.error('Error updating cart quantity:', error);
-        dispatch({
-          type: CART_ACTIONS.UPDATE_QUANTITY,
-          payload: { productId, quantity }
-        });
+        console.error('❌ Lỗi cập nhật số lượng:', error);
+        dispatch({ type: CART_ACTIONS.UPDATE_QUANTITY, payload: { productId, quantity } });
       }
     } else {
-      dispatch({
-        type: CART_ACTIONS.UPDATE_QUANTITY,
-        payload: { productId, quantity }
-      });
+      dispatch({ type: CART_ACTIONS.UPDATE_QUANTITY, payload: { productId, quantity } });
     }
   };
 
+  // Xóa toàn bộ giỏ hàng
   const clearCart = async () => {
     if (user?.id_NguoiDung) {
       try {
-        await cartAPI.clearCart(user.id_NguoiDung);
+        await cartAPI.clear();
       } catch (error) {
-        console.error('Error clearing cart from database:', error);
+        console.error('❌ Lỗi xóa giỏ hàng từ database:', error);
       }
     }
-    
     dispatch({ type: CART_ACTIONS.CLEAR_CART });
   };
 
-  // Computed values
-  const totalItems = state.items.reduce((total, item) => total + (item.quantity || item.soLuong || 0), 0);
+  // ============================================
+  // COMPUTED VALUES - Giá trị tính toán
+  // ============================================
+  
+  const totalItems = state.items.reduce((total, item) => 
+    total + (item.quantity || item.soLuong || 0), 0);
   
   const totalAmount = state.items.reduce((total, item) => {
     const price = item.giaKhuyenMai || item.gia;
@@ -334,23 +337,23 @@ export const CartProvider = ({ children }) => {
     return total + (price * quantity);
   }, 0);
 
-  const isInCart = (productId) => {
-    return state.items.some(item => item.id_SanPham === productId);
-  };
+  // ============================================
+  // HELPER FUNCTIONS - Hàm tiện ích công khai
+  // ============================================
+  
+  const isInCart = (productId) => 
+    state.items.some(item => item.id_SanPham === productId);
 
   const getItemQuantity = (productId) => {
     const item = state.items.find(item => item.id_SanPham === productId);
     return item ? (item.quantity || item.soLuong || 0) : 0;
   };
 
-  // Helper functions for compatibility
-  const getTotalItems = () => totalItems;
-  const getTotalPrice = () => totalAmount;
-
+  // Context value được cung cấp cho component con
   const value = {
     // State
     items: state.items,
-    cartItems: state.items,
+    cartItems: state.items, // Alias for backward compatibility
     totalItems,
     totalAmount,
     loading: state.loading,
@@ -364,8 +367,8 @@ export const CartProvider = ({ children }) => {
     // Helpers
     isInCart,
     getItemQuantity,
-    getTotalItems,
-    getTotalPrice
+    getTotalItems: () => totalItems,
+    getTotalPrice: () => totalAmount
   };
 
   return (
@@ -375,11 +378,13 @@ export const CartProvider = ({ children }) => {
   );
 };
 
-// Custom hook to use cart context
+// ============================================
+// CUSTOM HOOK - Hook sử dụng Cart Context
+// ============================================
 export const useCart = () => {
   const context = useContext(CartContext);
   if (!context) {
-    throw new Error('useCart must be used within a CartProvider');
+    throw new Error('useCart phải được sử dụng trong CartProvider');
   }
   return context;
 };

@@ -1,5 +1,5 @@
 const { DataTypes } = require('sequelize');
-const sequelize = require('./database');
+const { sequelize } = require('./database');
 
 // Order: Model đơn hàng (tương ứng bảng donhang)
 const Order = sequelize.define('Order', {
@@ -39,7 +39,8 @@ const Order = sequelize.define('Order', {
   trangThaiDonHang: {
     type: DataTypes.STRING(100),
     allowNull: true,
-  },
+    defaultValue: 'CHO_XAC_NHAN',
+  }
 }, {
   tableName: 'donhang',
   timestamps: false,

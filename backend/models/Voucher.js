@@ -1,5 +1,5 @@
 const { DataTypes } = require('sequelize');
-const sequelize = require('./database');
+const { sequelize } = require('./database');
 
 // Voucher: Model voucher (tương ứng bảng voucher)
 const Voucher = sequelize.define('Voucher', {

@@ -23,7 +23,6 @@ import {
   Error
 } from '@mui/icons-material';
 import { authAPI } from '../services/api';
-import styles from './LoginPage.module.scss'; // Reuse existing styles
 
 const ResetPasswordPage = () => {
   const navigate = useNavigate();

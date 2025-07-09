@@ -336,6 +336,7 @@ export const CartProvider = ({ children }) => {
     const quantity = item.quantity || item.soLuong || 0;
     return total + (price * quantity);
   }, 0);
+  console.log('CartContext totalAmount:', totalAmount);
 
   // ============================================
   // HELPER FUNCTIONS - Hàm tiện ích công khai
@@ -389,4 +390,5 @@ export const useCart = () => {
   return context;
 };
 
+export { CartContext };
 export default CartContext; 

@@ -17,7 +17,7 @@ const createTransporter = () => {
 // Template email đặt lại mật khẩu
 const getPasswordResetEmailTemplate = (userName, resetUrl) => {
   return {
-    subject: 'Đặt lại mật khẩu - HoaShop',
+    subject: 'Đặt lại mật khẩu - HoaNghe',
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <h2>Đặt lại mật khẩu HoaShop</h2>
@@ -27,7 +27,7 @@ const getPasswordResetEmailTemplate = (userName, resetUrl) => {
         <a href="${resetUrl}" style="background: #e91e63; color: #fff; padding: 10px 20px; border-radius: 5px; text-decoration: none;">Đặt lại mật khẩu</a>
         <p>Nếu bạn không yêu cầu, hãy bỏ qua email này.</p>
         <hr />
-        <p style="font-size: 12px; color: #888;">HoaShop - Đội ngũ hỗ trợ khách hàng</p>
+        <p style="font-size: 12px; color: #888;">HoaNghe - Đội ngũ hỗ trợ khách hàng</p>
       </div>
     `
   };

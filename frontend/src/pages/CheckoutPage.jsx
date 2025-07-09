@@ -1,641 +1,264 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
-import {
-  Box,
-  Typography,
-  Button,
-  Grid,
-  Paper,
-  TextField,
-  FormControl,
-  FormLabel,
-  RadioGroup,
-  FormControlLabel,
-  Radio,
-  Divider,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemAvatar,
-  Avatar,
-  IconButton,
-  Stepper,
-  Step,
-  StepLabel,
-  Alert,
-  Card,
-  CardContent
-} from '@mui/material';
-import {
-  ArrowBack,
-  ShoppingCart,
-  Payment,
-  LocalShipping,
-  CheckCircle,
-  Delete,
-  Edit
-} from '@mui/icons-material';
-import { useCart } from '../contexts/CartContext';
-import { useAuth } from '../contexts/AuthContext';
-import { orderAPI } from '../services/api';
-import styles from './CheckoutPage.module.scss';
+import { Stepper, Step, StepLabel, Button, Typography, Box, Paper, TextField, RadioGroup, FormControlLabel, Radio, CircularProgress } from '@mui/material';
+import { CartContext } from '../contexts/CartContext';
+import AuthContext from '../contexts/AuthContext';
+import api from '../services/api';
+
+const steps = ['Thông tin khách hàng', 'Địa chỉ giao hàng', 'Phương thức thanh toán', 'Xác nhận đơn hàng'];
+
+const initialCustomerInfo = {
+  name: '',
+  phone: '',
+  email: '',
+};
+const initialShipping = {
+  address: '',
+  note: '',
+};
 
 const CheckoutPage = () => {
+  const { cartItems, totalAmount, clearCart } = useContext(CartContext);
+  const { user } = useContext(AuthContext);
   const navigate = useNavigate();
-  const { cartItems, getTotalPrice, clearCart } = useCart();
-  const { user } = useAuth();
-  
+
   const [activeStep, setActiveStep] = useState(0);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [formData, setFormData] = useState({
-    // Thông tin khách hàng
-    hoTen: user?.ten || '',
-    email: user?.email || '',
-    soDienThoai: user?.soDienThoai || '',
-    diaChi: user?.diaChi || '',
-    
-    // Thông tin giao hàng
-    diaChiGiao: user?.diaChi || '',
-    ghiChu: '',
-    thoiGianGiao: 'asap', // asap, schedule
-    ngayGiao: '',
-    gioGiao: '',
-    
-    // Thanh toán
-    phuongThucThanhToan: 'cod', // cod, transfer, card
-    
-    // Voucher
-    maVoucher: '',
-    giaTriGiam: 0
-  });
-  
-  const [errors, setErrors] = useState({});
+  const [customerInfo, setCustomerInfo] = useState({ ...initialCustomerInfo, ...(user ? { name: user.hoTen, phone: user.soDienThoai, email: user.email } : {}) });
+  const [shipping, setShipping] = useState(initialShipping);
+  const [paymentMethod, setPaymentMethod] = useState('COD');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  const steps = ['Thông tin', 'Giao hàng', 'Thanh toán', 'Xác nhận'];
+  // Validate từng bước
+  const validateStep = () => {
+    if (activeStep === 0) {
+      if (!customerInfo.name || !customerInfo.phone) return 'Vui lòng nhập họ tên và số điện thoại.';
+    }
+    if (activeStep === 1) {
+      if (!shipping.address) return 'Vui lòng nhập địa chỉ giao hàng.';
+    }
+    if (activeStep === 2) {
+      if (!paymentMethod) return 'Vui lòng chọn phương thức thanh toán.';
+    }
+    if (activeStep === 3) {
+      if (
+        !customerInfo.name?.trim() || customerInfo.name.trim().length < 2 ||
+        !customerInfo.phone?.trim() || customerInfo.phone.trim().length < 8 ||
+        !shipping.address?.trim() || shipping.address.trim().length < 5 ||
+        !paymentMethod?.trim()
+      ) {
+        return 'Vui lòng nhập đầy đủ và hợp lệ họ tên (tối thiểu 2 ký tự), số điện thoại (tối thiểu 8 số), địa chỉ giao hàng (tối thiểu 5 ký tự), phương thức thanh toán!';
+      }
+      if (
+        !cartItems ||
+        !Array.isArray(cartItems) ||
+        cartItems.length === 0 ||
+        !cartItems.every(item => item.id_SanPham && ((item.soLuong || item.quantity) && item.gia))
+      ) {
+        return 'Giỏ hàng trống hoặc không hợp lệ';
+      }
+    }
+    return '';
+  };
 
-  // Redirect if not authenticated or cart is empty
-  useEffect(() => {
-    if (!user) {
-      // Redirect to login with return URL
-      navigate('/login', { 
-        state: { 
-          returnUrl: '/checkout',
-          message: 'Vui lòng đăng nhập để tiếp tục thanh toán'
-        }
-      });
+  const handleNext = async () => {
+    setError('');
+    const err = validateStep();
+    if (err) {
+      setError(err);
       return;
     }
-    
-    if (cartItems.length === 0) {
-      navigate('/cart');
-    }
-  }, [user, cartItems, navigate]);
+    if (activeStep === steps.length - 1) {
+      // Đặt hàng
+      setLoading(true);
+      try {
+        // Format cartItems data để match backend expectation
+        const formattedCartItems = cartItems.map(item => ({
+          id_SanPham: item.id_SanPham,
+          soLuong: item.quantity || item.soLuong || 1,
+          gia: item.giaKhuyenMai || item.gia,
+          giaTaiThoiDiem: item.giaKhuyenMai || item.gia,
+          tenSp: item.tenSp || 'Sản phẩm'
+        }));
 
-  const formatPrice = (price) => {
-    if (!price || price === 0) return '0đ';
-    return Number(price).toLocaleString('vi-VN') + 'đ';
-  };
+        console.log('📦 Original cartItems:', cartItems);
+        console.log('📦 Formatted cartItems:', formattedCartItems);
+        console.log('📦 Creating order with data:', {
+          hoTen: customerInfo.name,
+          soDienThoai: customerInfo.phone,
+          email: customerInfo.email,
+          diaChiGiao: shipping.address,
+          ghiChu: shipping.note,
+          phuongThucThanhToan: paymentMethod,
+          sanPham: formattedCartItems,
+          tongThanhToan: totalAmount,
+          id_NguoiDung: user?.id_NguoiDung
+        });
 
-  const getImageUrl = (hinhAnh) => {
-    if (!hinhAnh) return '/no-image.png';
-    if (hinhAnh.startsWith('http')) return hinhAnh;
-    if (hinhAnh.startsWith('/')) return `http://localhost:5002${hinhAnh}`;
-    return `http://localhost:5002/images/products/${hinhAnh}`;
-  };
-
-  const handleInputChange = (field) => (event) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: event.target.value
-    }));
-    
-    // Clear error when user starts typing
-    if (errors[field]) {
-      setErrors(prev => ({
-        ...prev,
-        [field]: ''
-      }));
-    }
-  };
-
-  const validateStep = (step) => {
-    const newErrors = {};
-    
-    switch (step) {
-      case 0: // Thông tin cá nhân
-        if (!formData.hoTen.trim()) newErrors.hoTen = 'Vui lòng nhập họ tên';
-        if (!formData.soDienThoai.trim()) {
-          newErrors.soDienThoai = 'Vui lòng nhập số điện thoại';
-        } else if (!/^[0-9]{10,11}$/.test(formData.soDienThoai.trim())) {
-          newErrors.soDienThoai = 'Số điện thoại không hợp lệ';
-        }
-        if (!formData.email.trim()) {
-          newErrors.email = 'Vui lòng nhập email';
-        } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-          newErrors.email = 'Email không hợp lệ';
-        }
-        break;
+        // 1. Tạo đơn hàng
+        const orderRes = await api.post('/orders', {
+          hoTen: customerInfo.name,
+          soDienThoai: customerInfo.phone,
+          email: customerInfo.email,
+          diaChiGiao: shipping.address,
+          ghiChu: shipping.note,
+          phuongThucThanhToan: paymentMethod,
+          sanPham: formattedCartItems,
+          tongThanhToan: totalAmount,
+          id_NguoiDung: user?.id_NguoiDung
+        });
         
-      case 1: // Thông tin giao hàng
-        if (!formData.diaChiGiao.trim()) newErrors.diaChiGiao = 'Vui lòng nhập địa chỉ giao hàng';
-        if (formData.thoiGianGiao === 'schedule') {
-          if (!formData.ngayGiao) newErrors.ngayGiao = 'Vui lòng chọn ngày giao';
-          if (!formData.gioGiao) newErrors.gioGiao = 'Vui lòng chọn giờ giao';
-        }
-        break;
+        console.log('✅ Order response:', orderRes);
+        console.log('✅ Order response data:', orderRes.data);
         
-      case 2: // Thanh toán
-        if (!formData.phuongThucThanhToan) newErrors.phuongThucThanhToan = 'Vui lòng chọn phương thức thanh toán';
-        break;
+        if (!orderRes.data?.success) {
+          throw new Error('API không trả về success=true: ' + JSON.stringify(orderRes.data));
+        }
+        
+        if (!orderRes.data?.data?.id_DonHang) {
+          throw new Error('API không trả về id_DonHang: ' + JSON.stringify(orderRes.data));
+        }
+        
+        const order = orderRes.data.data;
+        console.log('✅ Order created with ID:', order.id_DonHang);
+        
+        // 2. Xử lý thanh toán theo phương thức đã chọn
+        if (paymentMethod === 'VNPay') {
+          await handleVNPayPayment(order, totalAmount);
+        } else if (paymentMethod === 'ZaloPay') {
+          await handleZaloPayPayment(order, totalAmount);
+        } else {
+          // 3. Thanh toán COD: chuyển sang trang thành công
+          console.log('✅ COD order completed, clearing cart and redirecting...');
+          clearCart();
+          navigate('/order-success', { state: { order } });
+        }
+      } catch (e) {
+        console.error('❌ Checkout error:', e);
+        console.error('❌ Error response:', e.response?.data);
+        console.error('❌ Error message:', e.message);
+        console.error('❌ Full error object:', e);
+        setError(e.response?.data?.message || e.message || 'Có lỗi xảy ra khi đặt hàng.');
+      } finally {
+        setLoading(false);
+      }
+    } else {
+      setActiveStep((prev) => prev + 1);
     }
-    
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
   };
 
-  const handleNext = () => {
-    if (validateStep(activeStep)) {
-      setActiveStep(prev => Math.min(prev + 1, steps.length - 1));
+  // Xử lý thanh toán VNPay
+  const handleVNPayPayment = async (order, amount) => {
+    console.log('💳 Creating VNPay payment with amount:', amount);
+    const payRes = await api.post('/payment/create_payment_url', {
+      amount: amount,
+      orderId: order.id_DonHang,
+      orderDesc: `Thanh toán đơn hàng #${order.id_DonHang} - HoaShop`,
+    });
+    
+    console.log('💳 VNPay payment response:', payRes);
+    console.log('💳 VNPay payment response data:', payRes.data);
+    
+    const paymentData = payRes.data;
+    if (paymentData?.success && paymentData?.paymentUrl) {
+      console.log('🚀 Redirecting to VNPay:', paymentData.paymentUrl);
+      window.location.href = paymentData.paymentUrl;
+    } else {
+      throw new Error('VNPay không trả về payment URL: ' + JSON.stringify(paymentData));
+    }
+  };
+
+  // Xử lý thanh toán ZaloPay
+  const handleZaloPayPayment = async (order, amount) => {
+    console.log('🟡 Creating ZaloPay payment with amount:', amount);
+    const payRes = await api.post('/payment/create_zalopay_order', {
+      amount: amount,
+      orderId: order.id_DonHang,
+      orderDesc: `Thanh toán đơn hàng #${order.id_DonHang} - HoaShop`,
+    });
+    
+    console.log('🟡 ZaloPay payment response:', payRes);
+    console.log('🟡 ZaloPay payment response data:', payRes.data);
+    
+    const paymentData = payRes.data;
+    if (paymentData?.success && paymentData?.order_url) {
+      console.log('🚀 Redirecting to ZaloPay:', paymentData.order_url);
+      window.location.href = paymentData.order_url;
+    } else {
+      throw new Error('ZaloPay không trả về order URL: ' + JSON.stringify(paymentData));
     }
   };
 
   const handleBack = () => {
-    setActiveStep(prev => Math.max(prev - 1, 0));
+    setError('');
+    setActiveStep((prev) => prev - 1);
   };
 
-  const calculateShipping = () => {
-    const total = getTotalPrice();
-    if (total >= 500000) return 0; // Free shipping over 500k
-    return 30000; // 30k shipping fee
-  };
-
-  const calculateTotal = () => {
-    const subtotal = getTotalPrice();
-    const shipping = calculateShipping();
-    const discount = formData.giaTriGiam || 0;
-    return subtotal + shipping - discount;
-  };
-
-  const handleSubmitOrder = async () => {
-    if (!validateStep(activeStep)) return;
-    
-    setIsSubmitting(true);
-    try {
-      const orderData = {
-        // Thông tin khách hàng
-        id_NguoiDung: user?.id_NguoiDung,
-        hoTen: formData.hoTen,
-        email: formData.email,
-        soDienThoai: formData.soDienThoai,
-        diaChi: formData.diaChi,
-        
-        // Thông tin giao hàng
-        diaChiGiao: formData.diaChiGiao,
-        ghiChu: formData.ghiChu,
-        thoiGianGiao: formData.thoiGianGiao,
-        ngayGiao: formData.ngayGiao,
-        gioGiao: formData.gioGiao,
-        
-        // Thanh toán và trạng thái
-        phuongThucThanhToan: formData.phuongThucThanhToan.toUpperCase(),
-        trangThaiDonHang: 'CHO_XAC_NHAN',
-        trangThaiThanhToan: 'CHUA_THANH_TOAN',
-        
-        // Tổng tiền
-        tongTienHang: getTotalPrice(),
-        phiVanChuyen: calculateShipping(),
-        giaTriGiam: formData.giaTriGiam,
-        tongThanhToan: calculateTotal(),
-        
-        // Voucher
-        maVoucher: formData.maVoucher,
-        
-        // Chi tiết đơn hàng cho backend
-        chiTietDonHang: cartItems.map(item => ({
-          id_SanPham: item.id_SanPham,
-          soLuong: item.soLuong || item.quantity || 1,
-          giaTaiThoiDiem: item.giaKhuyenMai || item.gia,
-          thanhTien: (item.giaKhuyenMai || item.gia) * (item.soLuong || item.quantity || 1)
-        }))
-      };
-
-      // Call real API to create order
-      console.log('Submitting order to backend:', orderData);
-      const response = await orderAPI.createOrder(orderData);
-      
-      if (response.data) {
-        console.log('Order created successfully:', response.data);
-        
-        // Prepare data for success page
-        const successData = {
-          ...orderData,
-          id_DonHang: response.data.id_DonHang,
-          maDonHang: response.data.maDonHang || `DH${Date.now()}`,
-          
-          // Product list for display
-          sanPham: cartItems.map(item => ({
-            id_SanPham: item.id_SanPham,
-            tenSp: item.tenSp,
-            soLuong: item.soLuong || item.quantity || 1,
-            gia: item.giaKhuyenMai || item.gia,
-            thanhTien: (item.giaKhuyenMai || item.gia) * (item.soLuong || item.quantity || 1),
-            hinhAnh: item.hinhAnh
-          }))
-        };
-        
-        // Clear cart and redirect to success page
-        clearCart();
-        navigate('/orders/success', { 
-          state: { 
-            orderData: successData,
-            message: 'Đặt hàng thành công! Chúng tôi sẽ liên hệ với bạn sớm nhất để xác nhận đơn hàng.' 
-          }
-        });
-      }
-      
-    } catch (error) {
-      console.error('Error submitting order:', error);
-      
-      let errorMessage = 'Có lỗi xảy ra khi đặt hàng. Vui lòng thử lại.';
-      
-      if (error.response) {
-        // Backend responded with error
-        errorMessage = error.response.data?.message || errorMessage;
-      } else if (error.request) {
-        // Network error
-        errorMessage = 'Không thể kết nối đến server. Vui lòng kiểm tra kết nối internet.';
-      }
-      
-      setErrors({ submit: errorMessage });
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  if (cartItems.length === 0) {
-    return null; // Will redirect in useEffect
-  }
-
+  // Render từng bước
   const renderStepContent = (step) => {
     switch (step) {
       case 0:
         return (
-          <Grid container spacing={3}>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                label="Họ và tên *"
-                value={formData.hoTen}
-                onChange={handleInputChange('hoTen')}
-                error={!!errors.hoTen}
-                helperText={errors.hoTen}
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                label="Số điện thoại *"
-                value={formData.soDienThoai}
-                onChange={handleInputChange('soDienThoai')}
-                error={!!errors.soDienThoai}
-                helperText={errors.soDienThoai}
-              />
-            </Grid>
-            <Grid item xs={12}>
-              <TextField
-                fullWidth
-                label="Email *"
-                type="email"
-                value={formData.email}
-                onChange={handleInputChange('email')}
-                error={!!errors.email}
-                helperText={errors.email}
-              />
-            </Grid>
-            <Grid item xs={12}>
-              <TextField
-                fullWidth
-                label="Địa chỉ"
-                value={formData.diaChi}
-                onChange={handleInputChange('diaChi')}
-                multiline
-                rows={2}
-              />
-            </Grid>
-          </Grid>
+          <Box>
+            <TextField label="Họ tên" fullWidth margin="normal" value={customerInfo.name} onChange={e => setCustomerInfo({ ...customerInfo, name: e.target.value })} />
+            <TextField label="Số điện thoại" fullWidth margin="normal" value={customerInfo.phone} onChange={e => setCustomerInfo({ ...customerInfo, phone: e.target.value })} />
+            <TextField label="Email" fullWidth margin="normal" value={customerInfo.email} onChange={e => setCustomerInfo({ ...customerInfo, email: e.target.value })} />
+          </Box>
         );
-        
       case 1:
         return (
-          <Grid container spacing={3}>
-            <Grid item xs={12}>
-              <TextField
-                fullWidth
-                label="Địa chỉ giao hàng *"
-                value={formData.diaChiGiao}
-                onChange={handleInputChange('diaChiGiao')}
-                error={!!errors.diaChiGiao}
-                helperText={errors.diaChiGiao}
-                multiline
-                rows={3}
-              />
-            </Grid>
-            <Grid item xs={12}>
-              <FormControl component="fieldset">
-                <FormLabel component="legend">Thời gian giao hàng</FormLabel>
-                <RadioGroup
-                  value={formData.thoiGianGiao}
-                  onChange={handleInputChange('thoiGianGiao')}
-                >
-                  <FormControlLabel 
-                    value="asap" 
-                    control={<Radio />} 
-                    label="Giao hàng ngay khi có thể" 
-                  />
-                  <FormControlLabel 
-                    value="schedule" 
-                    control={<Radio />} 
-                    label="Hẹn thời gian giao hàng" 
-                  />
-                </RadioGroup>
-              </FormControl>
-            </Grid>
-            {formData.thoiGianGiao === 'schedule' && (
-              <>
-                <Grid item xs={12} sm={6}>
-                  <TextField
-                    fullWidth
-                    label="Ngày giao *"
-                    type="date"
-                    value={formData.ngayGiao}
-                    onChange={handleInputChange('ngayGiao')}
-                    error={!!errors.ngayGiao}
-                    helperText={errors.ngayGiao}
-                    InputLabelProps={{ shrink: true }}
-                  />
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <TextField
-                    fullWidth
-                    label="Giờ giao *"
-                    type="time"
-                    value={formData.gioGiao}
-                    onChange={handleInputChange('gioGiao')}
-                    error={!!errors.gioGiao}
-                    helperText={errors.gioGiao}
-                    InputLabelProps={{ shrink: true }}
-                  />
-                </Grid>
-              </>
-            )}
-            <Grid item xs={12}>
-              <TextField
-                fullWidth
-                label="Ghi chú cho đơn hàng"
-                value={formData.ghiChu}
-                onChange={handleInputChange('ghiChu')}
-                multiline
-                rows={3}
-                placeholder="Ví dụ: Giao hàng tại cổng chính, gọi trước 15 phút..."
-              />
-            </Grid>
-          </Grid>
+          <Box>
+            <TextField label="Địa chỉ giao hàng" fullWidth margin="normal" value={shipping.address} onChange={e => setShipping({ ...shipping, address: e.target.value })} />
+            <TextField label="Ghi chú" fullWidth margin="normal" value={shipping.note} onChange={e => setShipping({ ...shipping, note: e.target.value })} />
+          </Box>
         );
-        
       case 2:
         return (
-          <Grid container spacing={3}>
-            <Grid item xs={12}>
-              <FormControl component="fieldset">
-                <FormLabel component="legend">Phương thức thanh toán *</FormLabel>
-                <RadioGroup
-                  value={formData.phuongThucThanhToan}
-                  onChange={handleInputChange('phuongThucThanhToan')}
-                >
-                  <FormControlLabel 
-                    value="cod" 
-                    control={<Radio />} 
-                    label="💵 Thanh toán khi nhận hàng (COD)" 
-                  />
-                  <FormControlLabel 
-                    value="transfer" 
-                    control={<Radio />} 
-                    label="🏦 Chuyển khoản ngân hàng" 
-                  />
-                  <FormControlLabel 
-                    value="card" 
-                    control={<Radio />} 
-                    label="💳 Thanh toán online (ATM/Visa/MasterCard)" 
-                  />
-                </RadioGroup>
-              </FormControl>
-            </Grid>
-            <Grid item xs={12}>
-              <TextField
-                fullWidth
-                label="Mã giảm giá (nếu có)"
-                value={formData.maVoucher}
-                onChange={handleInputChange('maVoucher')}
-                placeholder="Nhập mã voucher"
-              />
-            </Grid>
-            {formData.phuongThucThanhToan === 'transfer' && (
-              <Grid item xs={12}>
-                <Alert severity="info">
-                  <Typography variant="body2">
-                    <strong>Thông tin chuyển khoản:</strong><br/>
-                    Ngân hàng: Vietcombank<br/>
-                    Số TK: 0123456789<br/>
-                    Tên TK: HOASHOP JSC<br/>
-                    Nội dung: HoaShop {formData.hoTen} {formData.soDienThoai}
-                  </Typography>
-                </Alert>
-              </Grid>
-            )}
-          </Grid>
+          <Box>
+            <RadioGroup value={paymentMethod} onChange={e => setPaymentMethod(e.target.value)}>
+              <FormControlLabel value="COD" control={<Radio />} label="Thanh toán khi nhận hàng (COD)" />
+              <FormControlLabel value="VNPay" control={<Radio />} label="Thanh toán qua VNPay (ATM, QR, thẻ quốc tế)" />
+              <FormControlLabel value="ZaloPay" control={<Radio />} label="Thanh toán qua ZaloPay (Ví điện tử, thẻ ATM)" />
+            </RadioGroup>
+          </Box>
         );
-        
       case 3:
         return (
-          <Grid container spacing={3}>
-            <Grid item xs={12}>
-              <Typography variant="h6" gutterBottom>
-                🔍 Xác nhận thông tin đặt hàng
-              </Typography>
-            </Grid>
-            <Grid item xs={12} md={6}>
-              <Paper elevation={1} className={styles.confirmSection}>
-                <Typography variant="subtitle1" gutterBottom>
-                  👤 Thông tin khách hàng
-                </Typography>
-                <Typography variant="body2">Họ tên: {formData.hoTen}</Typography>
-                <Typography variant="body2">SĐT: {formData.soDienThoai}</Typography>
-                <Typography variant="body2">Email: {formData.email}</Typography>
-              </Paper>
-            </Grid>
-            <Grid item xs={12} md={6}>
-              <Paper elevation={1} className={styles.confirmSection}>
-                <Typography variant="subtitle1" gutterBottom>
-                  🚚 Thông tin giao hàng
-                </Typography>
-                <Typography variant="body2">Địa chỉ: {formData.diaChiGiao}</Typography>
-                <Typography variant="body2">
-                  Thời gian: {formData.thoiGianGiao === 'asap' ? 'Ngay khi có thể' : `${formData.ngayGiao} ${formData.gioGiao}`}
-                </Typography>
-                <Typography variant="body2">
-                  Thanh toán: {
-                    formData.phuongThucThanhToan === 'cod' ? 'COD' :
-                    formData.phuongThucThanhToan === 'transfer' ? 'Chuyển khoản' : 'Thẻ'
-                  }
-                </Typography>
-              </Paper>
-            </Grid>
-          </Grid>
+          <Box>
+            <Typography variant="h6">Xác nhận đơn hàng</Typography>
+            <Typography>Khách hàng: {customerInfo.name} - {customerInfo.phone}</Typography>
+            <Typography>Địa chỉ: {shipping.address}</Typography>
+            <Typography>Phương thức thanh toán: {
+              paymentMethod === 'VNPay' ? 'VNPay' : 
+              paymentMethod === 'ZaloPay' ? 'ZaloPay' : 'COD'
+            }</Typography>
+            <Typography>Số sản phẩm: {cartItems.length}</Typography>
+            <Typography>Tổng tiền: {totalAmount.toLocaleString()}₫</Typography>
+          </Box>
         );
-        
       default:
         return null;
     }
   };
 
   return (
-    <Box className={styles.checkoutPage}>
-      {/* Header */}
-      <Box className={styles.header}>
-        <IconButton onClick={() => navigate('/cart')} className={styles.backBtn}>
-          <ArrowBack />
-        </IconButton>
-        <Typography variant="h4" className={styles.title}>
-          Thanh toán
-        </Typography>
+    <Paper sx={{ maxWidth: 600, margin: '32px auto', p: 3 }}>
+      <Stepper activeStep={activeStep} alternativeLabel>
+        {steps.map(label => (
+          <Step key={label}>
+            <StepLabel>{label}</StepLabel>
+          </Step>
+        ))}
+      </Stepper>
+      <Box mt={3} mb={2}>{renderStepContent(activeStep)}</Box>
+      {error && <Typography color="error">{error}</Typography>}
+      <Box display="flex" justifyContent="space-between" alignItems="center">
+        <Button disabled={activeStep === 0 || loading} onClick={handleBack}>Quay lại</Button>
+        <Button variant="contained" color="primary" onClick={handleNext} disabled={loading}>
+          {loading ? <CircularProgress size={24} /> : (activeStep === steps.length - 1 ? 'Đặt hàng' : 'Tiếp tục')}
+        </Button>
       </Box>
-
-      <Grid container spacing={4}>
-        {/* Left Column - Form */}
-        <Grid item xs={12} md={8}>
-          <Paper elevation={2} className={styles.formPaper}>
-            {/* Stepper */}
-            <Stepper activeStep={activeStep} alternativeLabel className={styles.stepper}>
-              {steps.map((label) => (
-                <Step key={label}>
-                  <StepLabel>{label}</StepLabel>
-                </Step>
-              ))}
-            </Stepper>
-
-            <Divider className={styles.divider} />
-
-            {/* Step Content */}
-            <Box className={styles.stepContent}>
-              {renderStepContent(activeStep)}
-            </Box>
-
-            {/* Navigation Buttons */}
-            <Box className={styles.navigation}>
-              <Button
-                disabled={activeStep === 0}
-                onClick={handleBack}
-                className={styles.backButton}
-              >
-                Quay lại
-              </Button>
-              <Box sx={{ flex: '1 1 auto' }} />
-              {activeStep === steps.length - 1 ? (
-                <Button
-                  variant="contained"
-                  onClick={handleSubmitOrder}
-                  disabled={isSubmitting}
-                  className={styles.submitButton}
-                >
-                  {isSubmitting ? 'Đang xử lý...' : 'Xác nhận đặt hàng'}
-                </Button>
-              ) : (
-                <Button
-                  variant="contained"
-                  onClick={handleNext}
-                  className={styles.nextButton}
-                >
-                  Tiếp tục
-                </Button>
-              )}
-            </Box>
-
-            {errors.submit && (
-              <Alert severity="error" className={styles.submitError}>
-                {errors.submit}
-              </Alert>
-            )}
-          </Paper>
-        </Grid>
-
-        {/* Right Column - Order Summary */}
-        <Grid item xs={12} md={4}>
-          <Paper elevation={2} className={styles.summaryPaper}>
-            <Typography variant="h6" className={styles.summaryTitle}>
-              📋 Đơn hàng của bạn
-            </Typography>
-
-            {/* Cart Items */}
-            <List className={styles.cartList}>
-              {cartItems.map((item) => (
-                <ListItem key={item.id_SanPham} className={styles.cartItem}>
-                  <ListItemAvatar>
-                    <Avatar
-                      src={getImageUrl(item.hinhAnh)}
-                      alt={item.tenSp}
-                      className={styles.productAvatar}
-                    />
-                  </ListItemAvatar>
-                  <ListItemText
-                    primary={item.tenSp}
-                    secondary={`${item.soLuong} x ${formatPrice(item.giaKhuyenMai || item.gia)}`}
-                  />
-                  <Typography variant="body2" className={styles.itemTotal}>
-                    {formatPrice((item.giaKhuyenMai || item.gia) * item.soLuong)}
-                  </Typography>
-                </ListItem>
-              ))}
-            </List>
-
-            <Divider />
-
-            {/* Order Summary */}
-            <Box className={styles.summaryDetails}>
-              <Box className={styles.summaryRow}>
-                <Typography>Tạm tính:</Typography>
-                <Typography>{formatPrice(getTotalPrice())}</Typography>
-              </Box>
-              <Box className={styles.summaryRow}>
-                <Typography>Phí giao hàng:</Typography>
-                <Typography>
-                  {calculateShipping() === 0 ? 'Miễn phí' : formatPrice(calculateShipping())}
-                </Typography>
-              </Box>
-              {formData.giaTriGiam > 0 && (
-                <Box className={styles.summaryRow}>
-                  <Typography color="success.main">Giảm giá:</Typography>
-                  <Typography color="success.main">-{formatPrice(formData.giaTriGiam)}</Typography>
-                </Box>
-              )}
-              <Divider className={styles.totalDivider} />
-              <Box className={styles.summaryRow + ' ' + styles.totalRow}>
-                <Typography variant="h6">Tổng cộng:</Typography>
-                <Typography variant="h6" className={styles.totalPrice}>
-                  {formatPrice(calculateTotal())}
-                </Typography>
-              </Box>
-            </Box>
-
-            {/* Free Shipping Notice */}
-            {calculateShipping() > 0 && (
-              <Alert severity="info" className={styles.shippingNotice}>
-                Mua thêm {formatPrice(500000 - getTotalPrice())} để được miễn phí giao hàng!
-              </Alert>
-            )}
-          </Paper>
-        </Grid>
-      </Grid>
-    </Box>
+    </Paper>
   );
 };
 

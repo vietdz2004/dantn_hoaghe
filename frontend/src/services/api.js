@@ -266,4 +266,31 @@ export {
 
 // Export aliases để tương thích ngược
 export const productsAPI = productAPI;
-export const categoriesAPI = categoryAPI; 
+export const categoriesAPI = categoryAPI;
+
+export const createVNPayPayment = async (payload) => {
+  try {
+    console.log('🏦 Creating VNPay payment with payload:', payload);
+    const res = await fetch('http://localhost:5002/api/payment/create_payment_url', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    
+    const data = await res.json();
+    console.log('🏦 VNPay response:', data);
+    
+    if (!res.ok) {
+      throw new Error(data.message || 'Lỗi tạo link thanh toán VNPay');
+    }
+    
+    if (!data.success || !data.paymentUrl) {
+      throw new Error(data.message || 'Không nhận được link thanh toán VNPay');
+    }
+    
+    return data;
+  } catch (error) {
+    console.error('❌ VNPay payment error:', error);
+    throw error;
+  }
+}; 

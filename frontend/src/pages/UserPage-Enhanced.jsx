@@ -3,7 +3,7 @@ import {
   Container, 
   Typography, 
   Box, 
-  Card, 
+  Card,
   CardContent,
   TextField,
   Button,
@@ -189,13 +189,13 @@ const UserPage = () => {
                 name="email"
                 type="email"
                 value={formData.email}
-                onChange={handleChange}
-                disabled={!editMode || loading}
-                variant={editMode ? "outlined" : "filled"}
+                onChange={() => {}}
+                disabled={true}
+                variant={"filled"}
                 InputProps={{
-                  readOnly: !editMode
+                  readOnly: true
                 }}
-                helperText={!editMode ? "Email không thể thay đổi" : ""}
+                helperText={"Email không thể thay đổi"}
               />
             </Grid>
           </Grid>
@@ -228,7 +228,7 @@ const UserPage = () => {
                 Ngày tạo tài khoản
               </Typography>
               <Typography variant="body1" fontWeight="medium">
-                {user?.createdAt ? new Date(user.createdAt).toLocaleDateString('vi-VN') : 'Không xác định'}
+                {user?.createdAt ? new Date(user.createdAt).toLocaleDateString('vi-VN', { year: 'numeric', month: '2-digit', day: '2-digit' }) : 'Không xác định (cập nhật ngày)'}
               </Typography>
             </Grid>
           </Grid>

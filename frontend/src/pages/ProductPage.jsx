@@ -22,7 +22,7 @@ import {
   TuneOutlined as FilterIcon
 } from '@mui/icons-material';
 import ProductList from '../components/ProductList';
-import { productsAPI, categoriesAPI, subCategoryAPI } from '../services/api';
+import { productsAPI, categoriesAPI } from '../services/api';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import styles from './ProductPage.module.scss';
 
@@ -35,7 +35,6 @@ const ProductPage = () => {
   // ============================================
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
-  const [subCategories, setSubCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [pageTitle, setPageTitle] = useState('Danh Sách Sản Phẩm');
@@ -58,6 +57,7 @@ const ProductPage = () => {
   
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const [searchQuery, setSearchQuery] = useState('');
 
   // ============================================
   // HELPER FUNCTIONS - Hàm tiện ích
@@ -81,7 +81,6 @@ const ProductPage = () => {
     // Xử lý các filter đặc biệt từ URL (từ nút "Xem thêm")
     const urlFilters = {
       category: searchParams.get('category'),
-      subcategory: searchParams.get('subcategory'), // THÊM MỚI
       discount: searchParams.get('discount'),
       popular: searchParams.get('popular'),
       new: searchParams.get('new'),
@@ -101,12 +100,6 @@ const ProductPage = () => {
     } else if (urlFilters.bestseller === 'true') {
       setPageTitle('🏆 Sản phẩm bán chạy');
       apiParams.bestseller = true;
-    } else if (urlFilters.subcategory) {
-      // Hiển thị tên subcategory cụ thể
-      const subCat = categories.flatMap(cat => cat.SubCategories || [])
-        .find(sub => sub.id_DanhMucChiTiet.toString() === urlFilters.subcategory);
-      setPageTitle(subCat ? `${subCat.tenDanhMucChiTiet}` : 'Sản phẩm theo danh mục con');
-      apiParams.subcat = urlFilters.subcategory;
     } else if (urlFilters.category) {
       // Hiển thị tên category cụ thể
       const cat = categories.find(c => c.id_DanhMuc.toString() === urlFilters.category);
@@ -124,9 +117,6 @@ const ProductPage = () => {
     // Áp dụng URL params CÓ PRIORITY CAO NHẤT (sau dropdown filters)
     if (urlFilters.category) {
       apiParams.category = urlFilters.category;
-    }
-    if (urlFilters.subcategory) {
-      apiParams.subcat = urlFilters.subcategory;
     }
 
     // Áp dụng sắp xếp

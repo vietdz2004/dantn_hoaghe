@@ -1,13 +1,11 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Box, Typography, TextField, Button, Alert } from '@mui/material';
-import { useAuth } from '../contexts/AuthContext';
 import styles from './LoginPage.module.scss'; // Reuse LoginPage styles
 import { authAPI } from '../services/api';
 
 const ForgotPasswordPage = () => {
   const navigate = useNavigate();
-  const { loading: authLoading } = useAuth();
   
   const [email, setEmail] = useState('');
   const [error, setError] = useState('');
@@ -38,7 +36,7 @@ const ForgotPasswordPage = () => {
         setSuccess(response.data.message || 'Đã gửi liên kết đặt lại mật khẩu đến email của bạn');
         
         // Show additional info for development
-        if (response.data.resetToken && process.env.NODE_ENV === 'development') {
+        if (response.data.resetToken && import.meta.env.MODE === 'development') {
           console.log('🔗 Development Reset Link:', `http://localhost:3000/reset-password?token=${response.data.resetToken}`);
         }
         

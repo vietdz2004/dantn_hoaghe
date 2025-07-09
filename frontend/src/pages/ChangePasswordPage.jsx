@@ -22,7 +22,6 @@ import {
 } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
 import { authAPI } from '../services/api';
-import styles from './LoginPage.module.scss'; // Reuse existing styles
 
 const ChangePasswordPage = () => {
   const navigate = useNavigate();

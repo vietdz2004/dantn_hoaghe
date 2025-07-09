@@ -17,6 +17,7 @@ const voucherRoutes = require('./routes/voucherRoutes');
 const quickOrderRoutes = require('./routes/quickOrderRoutes');
 const dashboardRoutes = require('./routes/dashboardRoutes');
 const wishlistRoutes = require('./routes/wishlistRoutes');
+const paymentRoutes = require('./routes/paymentRoutes');
 
 // Import admin routes - Import routes quản trị
 const adminRoutes = require('./routes/adminRoutes');
@@ -67,6 +68,7 @@ app.use('/api/vouchers', voucherRoutes);
 app.use('/api/quick-orders', quickOrderRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/wishlist', wishlistRoutes);
+app.use('/api/payment', paymentRoutes);
 
 // Admin API Routes
 app.use('/api/admin', adminRoutes);

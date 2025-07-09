@@ -310,7 +310,11 @@ exports.getById = async (req, res) => {
       OrderDetails: orderDetails
     };
     
-    res.json(order);
+    res.json({
+      success: true,
+      data: order,
+      message: 'Lấy đơn hàng thành công'
+    });
   } catch (error) {
     res.status(500).json({ message: 'Lỗi server', error: error.message });
   }

@@ -14,7 +14,6 @@ const cartRoutes = require('./routes/cartRoutes');
 const orderRoutes = require('./routes/orderRoutes');
 const reviewRoutes = require('./routes/reviewRoutes');
 const voucherRoutes = require('./routes/voucherRoutes');
-const quickOrderRoutes = require('./routes/quickOrderRoutes');
 const dashboardRoutes = require('./routes/dashboardRoutes');
 const wishlistRoutes = require('./routes/wishlistRoutes');
 const paymentRoutes = require('./routes/paymentRoutes');
@@ -30,7 +29,11 @@ const app = express();
 
 // CORS configuration
 const corsOptions = {
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+  origin: [
+    process.env.FRONTEND_URL || 'http://localhost:3000',
+    'http://localhost:5173',
+    'http://127.0.0.1:5173'
+  ],
   credentials: true,
   optionsSuccessStatus: 200
 };
@@ -46,6 +49,12 @@ if (process.env.NODE_ENV === 'development') {
   app.use(morgan('dev'));
 }
 
+// Debug middleware - Log all requests
+app.use((req, res, next) => {
+  console.log(`🔍 ${req.method} ${req.path} - Body:`, req.body);
+  next();
+});
+
 // Health check endpoint
 app.get('/api/health', (req, res) => {
   res.json({
@@ -54,6 +63,12 @@ app.get('/api/health', (req, res) => {
     timestamp: new Date().toISOString(),
     version: '1.0.0'
   });
+});
+
+// Debug middleware - Log all requests
+app.use((req, res, next) => {
+  console.log(`🔍 ${req.method} ${req.path} - Body:`, req.body);
+  next();
 });
 
 // API Routes
@@ -65,7 +80,6 @@ app.use('/api/cart', cartRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/vouchers', voucherRoutes);
-app.use('/api/quick-orders', quickOrderRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/wishlist', wishlistRoutes);
 app.use('/api/payment', paymentRoutes);

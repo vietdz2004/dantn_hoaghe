@@ -22,10 +22,6 @@ exports.getOverview = async (req, res) => {
         (SELECT COUNT(*) FROM nguoidung) as totalUsers,
         (SELECT COUNT(*) FROM nguoidung WHERE DATE(ngayTao) = CURRENT_DATE) as newUsersToday,
         
-        -- Đơn đặt nhanh
-        (SELECT COUNT(*) FROM quick_orders) as totalQuickOrders,
-        (SELECT COUNT(*) FROM quick_orders WHERE trangThai = 'DANG_CHO') as pendingQuickOrders,
-        
         -- Doanh thu
         (SELECT COALESCE(SUM(tongThanhToan), 0) FROM donhang WHERE trangThaiDonHang = 'DA_GIAO') as totalRevenue,
         (SELECT COALESCE(SUM(tongThanhToan), 0) FROM donhang WHERE DATE(ngayDatHang) = CURRENT_DATE AND trangThaiDonHang = 'DA_GIAO') as todayRevenue,
@@ -53,10 +49,6 @@ exports.getOverview = async (req, res) => {
           total: parseInt(overview.totalUsers),
           newToday: parseInt(overview.newUsersToday)
         },
-        quickOrders: {
-          total: parseInt(overview.totalQuickOrders),
-          pending: parseInt(overview.pendingQuickOrders)
-        },
         revenue: {
           total: parseFloat(overview.totalRevenue),
           today: parseFloat(overview.todayRevenue),
@@ -74,7 +66,7 @@ exports.getOverview = async (req, res) => {
   }
 };
 
-// Recent Activities - Hoạt động gần đây
+// Recent Activities - Hoạt động gần đây (removed quick order references)
 exports.getRecentActivities = async (req, res) => {
   try {
     const limit = parseInt(req.query.limit) || 10;
@@ -88,18 +80,6 @@ exports.getRecentActivities = async (req, res) => {
         ngayDatHang as createdAt
       FROM donhang 
       ORDER BY ngayDatHang DESC 
-      LIMIT ?)
-      
-      UNION ALL
-      
-      (SELECT 
-        'quick_order' as type,
-        id as id,
-        CONCAT('Đơn nhanh #', maDonNhanh, ' - ', tenKhachHang) as title,
-        trangThai as status,
-        createdAt
-      FROM quick_orders 
-      ORDER BY createdAt DESC 
       LIMIT ?)
       
       UNION ALL
@@ -119,7 +99,7 @@ exports.getRecentActivities = async (req, res) => {
     `;
 
     const activities = await sequelize.query(activitiesQuery, {
-      replacements: [limit, limit, limit, limit],
+      replacements: [limit, limit, limit],
       type: QueryTypes.SELECT
     });
 
@@ -311,43 +291,6 @@ exports.getUserStats = async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Lỗi khi lấy thống kê người dùng',
-      error: error.message
-    });
-  }
-};
-
-// Quick Order Statistics - Thống kê đơn nhanh
-exports.getQuickOrderStats = async (req, res) => {
-  try {
-    const quickOrderStatsQuery = `
-      SELECT 
-        trangThai as status,
-        COUNT(*) as count,
-        COALESCE(SUM(tongTien), 0) as totalValue,
-        COALESCE(AVG(tongTien), 0) as avgValue
-      FROM quick_orders
-      GROUP BY trangThai
-      ORDER BY count DESC
-    `;
-
-    const quickOrderStats = await sequelize.query(quickOrderStatsQuery, {
-      type: QueryTypes.SELECT
-    });
-
-    res.json({
-      success: true,
-      data: quickOrderStats.map(stat => ({
-        status: stat.status,
-        count: parseInt(stat.count),
-        totalValue: parseFloat(stat.totalValue),
-        avgValue: parseFloat(stat.avgValue)
-      }))
-    });
-  } catch (error) {
-    console.error('Error in getQuickOrderStats:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Lỗi khi lấy thống kê đơn đặt nhanh',
       error: error.message
     });
   }

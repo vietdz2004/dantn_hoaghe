@@ -10,7 +10,7 @@ const Order = require('./Order');
 const OrderDetail = require('./OrderDetail');
 const Voucher = require('./Voucher');
 const Review = require('./Review');
-const QuickOrder = require('./QuickOrder');
+
 const Cart = require('./Cart');
 const Wishlist = require('./Wishlist');
 
@@ -59,7 +59,7 @@ Wishlist.belongsTo(User, { foreignKey: 'id_NguoiDung' });
 Product.hasMany(Wishlist, { foreignKey: 'id_SanPham' });
 Wishlist.belongsTo(Product, { foreignKey: 'id_SanPham' });
 
-// Export tất cả models và sequelize
+// Export tất cả models và database connection
 module.exports = { 
   sequelize, 
   User, 
@@ -70,7 +70,6 @@ module.exports = {
   OrderDetail, 
   Voucher, 
   Review,
-  QuickOrder,
   Cart,
   Wishlist
 }; 

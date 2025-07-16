@@ -74,19 +74,25 @@ exports.getAll = async (req, res) => {
       queryParams.push(`%${search}%`, `%${search}%`, `%${search}%`);
     }
 
-    // Category filter - Khi chọn danh mục cha, lấy tất cả sản phẩm của danh mục con
-    if (category) {
-      whereConditions.push(`c.id_DanhMuc = ?`);
-      queryParams.push(category);
-    }
-
-    // Subcategory filter - Chọn cụ thể danh mục con
+    // Category & Subcategory filter logic
+    let hasSubcat = false;
     if (subcat) {
       const subcats = subcat.split(',').map(s => parseInt(s)).filter(s => !isNaN(s));
       if (subcats.length > 0) {
         whereConditions.push(`p.id_DanhMucChiTiet IN (${subcats.map(() => '?').join(',')})`);
         queryParams.push(...subcats);
+        hasSubcat = true;
       }
+    }
+    if (!hasSubcat && category) {
+      whereConditions.push(`c.id_DanhMuc = ?`);
+      queryParams.push(category);
+    }
+
+    // Status filter
+    if (status) {
+      whereConditions.push('p.trangThai = ?');
+      queryParams.push(status);
     }
 
     // Price range filter
@@ -628,7 +634,17 @@ exports.getRelatedProducts = async (req, res) => {
   }
 };
 
-// Search products with improved relevance algorithm
+// Hàm chuẩn hóa tiếng Việt không dấu
+function normalizeText(str) {
+  return str
+    .toLowerCase()
+    .normalize('NFD').replace(/[0-9]/g, '') // remove diacritics
+    .replace(/[^a-z0-9 ]/g, '') // remove special chars
+    .replace(/\s+/g, ' ') // collapse spaces
+    .trim();
+}
+
+// Search products with improved relevance algorithm (không dấu, gần đúng, sai thứ tự)
 exports.searchProducts = async (req, res) => {
   try {
     const {
@@ -648,41 +664,49 @@ exports.searchProducts = async (req, res) => {
       });
     }
     
-    console.log('🔍 Search query:', { searchTerm, page, limit, category, minPrice, maxPrice });
-    
+    // Chuẩn hóa từ khóa
     const cleanSearchTerm = searchTerm.trim().toLowerCase();
+    const normalizedKeyword = normalizeText(cleanSearchTerm);
     
-    // Build WHERE conditions with improved relevance scoring
+    // Tách từ khóa thành các từ riêng biệt
+    const searchWords = cleanSearchTerm.split(/\s+/).filter(word => word.length > 0);
+    const normalizedWords = normalizedKeyword.split(/\s+/).filter(word => word.length > 0);
+    
+    // Build WHERE conditions - Ưu tiên tên sản phẩm trước
     const whereConditions = [
-      'p.trangThai = "active"', // Only search active products
+      'p.trangThai = "active"',
       `(
-        p.tenSp LIKE ? OR 
-        p.moTa LIKE ? OR 
-        p.thuongHieu LIKE ? OR
-        c.tenDanhMuc LIKE ? OR
-        sc.tenDanhMucChiTiet LIKE ?
+        LOWER(p.tenSp) LIKE ? OR 
+        p.tenSp_normalized LIKE ? OR
+        LOWER(p.tenSp) LIKE ? OR
+        p.tenSp_normalized LIKE ?
       )`
     ];
     
+    // Tạo pattern cho tên sản phẩm - ưu tiên match toàn bộ từ khóa
+    const exactMatchPattern = `%${cleanSearchTerm}%`;
+    const normalizedExactPattern = `%${normalizedKeyword}%`;
+    const wordMatchPattern = searchWords.map(word => `%${word}%`).join('%');
+    const normalizedWordPattern = normalizedWords.map(word => `%${word}%`).join('%');
+    
     const queryParams = [
-      `%${cleanSearchTerm}%`, // tenSp
-      `%${cleanSearchTerm}%`, // moTa  
-      `%${cleanSearchTerm}%`, // thuongHieu
-      `%${cleanSearchTerm}%`, // tenDanhMuc
-      `%${cleanSearchTerm}%`  // tenDanhMucChiTiet
+      exactMatchPattern,        // tenSp exact
+      normalizedExactPattern,   // tenSp_normalized exact
+      wordMatchPattern,         // tenSp word by word
+      normalizedWordPattern     // tenSp_normalized word by word
     ];
     
-    // Additional filters
+    // Thêm filter theo category nếu có
     if (category) {
       whereConditions.push('c.id_DanhMuc = ?');
       queryParams.push(category);
     }
     
+    // Thêm filter theo giá nếu có
     if (minPrice) {
       whereConditions.push('COALESCE(p.giaKhuyenMai, p.gia) >= ?');
       queryParams.push(parseFloat(minPrice));
     }
-    
     if (maxPrice) {
       whereConditions.push('COALESCE(p.giaKhuyenMai, p.gia) <= ?');
       queryParams.push(parseFloat(maxPrice));
@@ -691,7 +715,7 @@ exports.searchProducts = async (req, res) => {
     const whereClause = `WHERE ${whereConditions.join(' AND ')}`;
     const offset = (parseInt(page) - 1) * parseInt(limit);
     
-    // Improved query with relevance scoring
+    // Query với relevance scoring cải tiến - ưu tiên tên sản phẩm
     const query = `
       SELECT 
         p.*,
@@ -705,68 +729,89 @@ exports.searchProducts = async (req, res) => {
         END as discountPercent,
         (
           CASE 
-            -- Exact match in product name gets highest score
             WHEN LOWER(p.tenSp) = ? THEN 100
+            WHEN p.tenSp_normalized = ? THEN 98
+            WHEN LOWER(p.tenSp) LIKE ? THEN 95
+            WHEN p.tenSp_normalized LIKE ? THEN 93
             WHEN LOWER(p.tenSp) LIKE ? THEN 90
-            -- Partial match at beginning of product name
+            WHEN p.tenSp_normalized LIKE ? THEN 88
+            WHEN LOWER(p.tenSp) LIKE ? THEN 85
+            WHEN p.tenSp_normalized LIKE ? THEN 83
             WHEN LOWER(p.tenSp) LIKE ? THEN 80
-            -- Match in category name
-            WHEN LOWER(c.tenDanhMuc) LIKE ? THEN 70
-            WHEN LOWER(sc.tenDanhMucChiTiet) LIKE ? THEN 65
-            -- Match in brand
-            WHEN LOWER(p.thuongHieu) LIKE ? THEN 60
-            -- Match in description
-            WHEN LOWER(p.moTa) LIKE ? THEN 50
-            -- Partial match anywhere in product name
+            WHEN p.tenSp_normalized LIKE ? THEN 78
+            WHEN LOWER(p.tenSp) LIKE ? THEN 75
+            WHEN p.tenSp_normalized LIKE ? THEN 73
+            WHEN LOWER(p.tenSp) LIKE ? THEN 70
+            WHEN p.tenSp_normalized LIKE ? THEN 68
+            WHEN LOWER(p.tenSp) LIKE ? THEN 65
+            WHEN p.tenSp_normalized LIKE ? THEN 63
+            WHEN LOWER(p.tenSp) LIKE ? THEN 60
+            WHEN p.tenSp_normalized LIKE ? THEN 58
+            WHEN LOWER(p.tenSp) LIKE ? THEN 55
+            WHEN p.tenSp_normalized LIKE ? THEN 53
+            WHEN LOWER(p.tenSp) LIKE ? THEN 50
+            WHEN p.tenSp_normalized LIKE ? THEN 48
+            WHEN LOWER(p.tenSp) LIKE ? THEN 45
+            WHEN p.tenSp_normalized LIKE ? THEN 43
             WHEN LOWER(p.tenSp) LIKE ? THEN 40
-            ELSE 10
+            WHEN p.tenSp_normalized LIKE ? THEN 38
+            WHEN LOWER(p.tenSp) LIKE ? THEN 35
+            WHEN p.tenSp_normalized LIKE ? THEN 33
+            WHEN LOWER(p.tenSp) LIKE ? THEN 30
+            WHEN p.tenSp_normalized LIKE ? THEN 28
+            WHEN LOWER(p.tenSp) LIKE ? THEN 25
+            WHEN p.tenSp_normalized LIKE ? THEN 23
+            WHEN LOWER(p.tenSp) LIKE ? THEN 20
+            WHEN p.tenSp_normalized LIKE ? THEN 18
+            WHEN LOWER(p.tenSp) LIKE ? THEN 15
+            WHEN p.tenSp_normalized LIKE ? THEN 13
+            WHEN LOWER(p.tenSp) LIKE ? THEN 10
+            WHEN p.tenSp_normalized LIKE ? THEN 8
+            WHEN LOWER(p.tenSp) LIKE ? THEN 5
+            WHEN p.tenSp_normalized LIKE ? THEN 3
+            ELSE 0
           END
-          -- Boost score for products with good inventory
           + CASE WHEN p.soLuongTon > 0 THEN 5 ELSE 0 END
-          -- Boost score for discounted products
           + CASE WHEN p.giaKhuyenMai IS NOT NULL AND p.giaKhuyenMai < p.gia THEN 3 ELSE 0 END
         ) as relevance_score
       FROM sanpham p
       LEFT JOIN danhmucchitiet sc ON p.id_DanhMucChiTiet = sc.id_DanhMucChiTiet
       LEFT JOIN danhmuc c ON sc.id_DanhMuc = c.id_DanhMuc
       ${whereClause}
+      HAVING relevance_score > 10
       ORDER BY relevance_score DESC, p.soLuongTon DESC, p.id_SanPham DESC
       LIMIT ? OFFSET ?
     `;
     
-    // Add parameters for relevance scoring
+    // Tham số cho relevance scoring - tạo nhiều pattern khác nhau
     const scoringParams = [
       cleanSearchTerm,           // Exact match
-      `%${cleanSearchTerm}%`,    // Full word match  
+      normalizedKeyword,         // Exact match không dấu
+      `%${cleanSearchTerm}%`,    // Contains
+      `%${normalizedKeyword}%`,  // Contains không dấu
       `${cleanSearchTerm}%`,     // Starts with
-      `%${cleanSearchTerm}%`,    // Category match
-      `%${cleanSearchTerm}%`,    // Subcategory match
-      `%${cleanSearchTerm}%`,    // Brand match
-      `%${cleanSearchTerm}%`,    // Description match
-      `%${cleanSearchTerm}%`     // Anywhere in name
+      `${normalizedKeyword}%`,   // Starts with không dấu
+      `%${cleanSearchTerm}`,     // Ends with
+      `%${normalizedKeyword}`,   // Ends with không dấu
+      ...searchWords.map(word => `%${word}%`),           // Individual words
+      ...normalizedWords.map(word => `%${word}%`),       // Individual words không dấu
+      ...searchWords.map(word => `${word}%`),            // Words start with
+      ...normalizedWords.map(word => `${word}%`),        // Words start with không dấu
+      ...searchWords.map(word => `%${word}`),            // Words end with
+      ...normalizedWords.map(word => `%${word}`),        // Words end with không dấu
+      ...searchWords.map(word => `% ${word} %`),         // Words surrounded by spaces
+      ...normalizedWords.map(word => `% ${word} %`),     // Words surrounded by spaces không dấu
+      ...searchWords.map(word => `%${word} %`),          // Words followed by space
+      ...normalizedWords.map(word => `%${word} %`),      // Words followed by space không dấu
+      ...searchWords.map(word => `% ${word}%`),          // Words preceded by space
+      ...normalizedWords.map(word => `% ${word}%`)       // Words preceded by space không dấu
     ];
     
-    const allParams = [...scoringParams, ...queryParams, parseInt(limit), offset];
-    
-    console.log('🔍 Executing search with params:', { 
-      searchTerm: cleanSearchTerm, 
-      totalParams: allParams.length,
-      conditions: whereConditions.length 
-    });
+    const allParams = [...queryParams, ...scoringParams, parseInt(limit), offset];
     
     const products = await sequelize.query(query, {
       replacements: allParams,
       type: QueryTypes.SELECT
-    });
-    
-    console.log('📊 Search results:', { 
-      searchTerm: cleanSearchTerm,
-      found: products.length,
-      topResults: products.slice(0, 3).map(p => ({ 
-        name: p.tenSp, 
-        score: p.relevance_score,
-        category: p.tenDanhMuc 
-      }))
     });
     
     res.json({
@@ -778,7 +823,9 @@ exports.searchProducts = async (req, res) => {
         page: parseInt(page),
         limit: parseInt(limit),
         hasResults: products.length > 0,
-        algorithm: 'Enhanced relevance scoring v2.0'
+        algorithm: 'Enhanced relevance + word-based scoring',
+        searchWords: searchWords,
+        normalizedWords: normalizedWords
       }
     });
   } catch (error) {
@@ -800,6 +847,7 @@ exports.create = async (req, res) => {
     const productData = {
       maSKU: req.body.sku || generateSKU(),
       tenSp: req.body.tenSanPham || req.body.tenSp || '',
+      tenSp_normalized: normalizeText(req.body.tenSanPham || req.body.tenSp || ''),
       moTa: req.body.moTa || '',
       hinhAnh: req.body.hinhAnh || '',
       thuongHieu: req.body.thuongHieu || '',
@@ -835,16 +883,17 @@ exports.create = async (req, res) => {
     // SIMPLIFIED INSERT - only essential fields
     const query = `
       INSERT INTO sanpham (
-        maSKU, tenSp, moTa, hinhAnh, thuongHieu, gia, giaKhuyenMai, 
+        maSKU, tenSp, tenSp_normalized, moTa, hinhAnh, thuongHieu, gia, giaKhuyenMai, 
         soLuongTon, trangThai, id_DanhMucChiTiet
       )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
     
     const result = await sequelize.query(query, {
       replacements: [
         productData.maSKU,
         productData.tenSp,
+        productData.tenSp_normalized,
         productData.moTa,
         productData.hinhAnh,
         productData.thuongHieu,
@@ -886,6 +935,10 @@ exports.update = async (req, res) => {
     
     if (req.file) {
       updateData.hinhAnh = `/images/products/${req.file.filename}`;
+    }
+    
+    if (updateData.tenSp) {
+      updateData.tenSp_normalized = normalizeText(updateData.tenSp);
     }
     
     const setClause = Object.keys(updateData)

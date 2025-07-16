@@ -1,236 +1,110 @@
-/**
- * ADMINLAYOUT.JSX - LAYOUT ADMIN ĐỠN GIẢN
- * 
- * Chức năng:
- * - Sidebar navigation
- * - AppBar header
- * - Main content area
- * - Responsive design
- */
+import React, { useState, useEffect } from "react";
+import { Outlet, Link, useNavigate, useLocation } from "react-router-dom";
+import "../App.css";
 
-import React, { useState } from 'react';
-import { Outlet, useNavigate, useLocation } from 'react-router-dom';
-import {
-  Box,
-  AppBar,
-  Toolbar,
-  Typography,
-  Drawer,
-  List,
-  ListItem,
-  ListItemButton,
-  ListItemIcon,
-  ListItemText,
-  Divider,
-  IconButton,
-  Avatar,
-  useTheme,
-  useMediaQuery,
-} from '@mui/material';
-import {
-  Dashboard,
-  LocalFlorist,
-  ShoppingCart,
-  People,
-  Menu as MenuIcon,
-  ExitToApp,
-} from '@mui/icons-material';
+const menu = [
+  { label: "Dashboard", path: "/admin" },
+  { label: "Sản phẩm", path: "/admin/products" },
+  { label: "Danh mục", path: "/admin/categories" },
+  { label: "Đơn hàng", path: "/admin/orders" },
+  { label: "Voucher", path: "/admin/vouchers" },
+  { label: "Người dùng", path: "/admin/users" },
+  { label: "Đánh giá", path: "/admin/reviews" },
+];
 
-const DRAWER_WIDTH = 280;
-
-const AdminLayout = () => {
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+// Layout tổng thể cho admin: sidebar, header, main content
+export default function AdminLayout() {
   const navigate = useNavigate();
   const location = useLocation();
-  const [mobileOpen, setMobileOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
 
-  const handleDrawerToggle = () => {
-    setMobileOpen(!mobileOpen);
+  // Check screen size
+  useEffect(() => {
+    const checkScreenSize = () => {
+      setIsMobile(window.innerWidth <= 767);
+      if (window.innerWidth > 767) {
+        setIsMobileMenuOpen(false);
+      }
+    };
+
+    checkScreenSize();
+    window.addEventListener('resize', checkScreenSize);
+    return () => window.removeEventListener('resize', checkScreenSize);
+  }, []);
+
+  // Close mobile menu when route changes
+  useEffect(() => {
+    setIsMobileMenuOpen(false);
+  }, [location.pathname]);
+
+  const handleMobileMenuToggle = () => {
+    setIsMobileMenuOpen(!isMobileMenuOpen);
   };
 
-  const menuItems = [
-    { title: 'Dashboard', icon: <Dashboard />, path: '/' },
-    { title: 'Sản Phẩm', icon: <LocalFlorist />, path: '/products' },
-    { title: 'Đơn Hàng', icon: <ShoppingCart />, path: '/orders' },
-    { title: 'Khách Hàng', icon: <People />, path: '/customers' },
-  ];
-
-  const handleNavigation = (path) => {
-    navigate(path);
+  const handleLinkClick = () => {
     if (isMobile) {
-      setMobileOpen(false);
+      setIsMobileMenuOpen(false);
     }
   };
 
-  const drawer = (
-    <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-      {/* Logo & Title */}
-      <Box sx={{ 
-        padding: 3, 
-        textAlign: 'center',
-        borderBottom: '1px solid rgba(226, 232, 240, 0.8)',
-      }}>
-        <LocalFlorist sx={{ fontSize: '2rem', color: 'primary.main', mb: 1 }} />
-        <Typography variant="h6" sx={{ fontWeight: 600, color: 'text.primary' }}>
-          HoaShop Admin
-        </Typography>
-        <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-          Quản trị hệ thống
-        </Typography>
-      </Box>
-
-      {/* Navigation Menu */}
-      <List sx={{ flex: 1, px: 2, py: 2 }}>
-        {menuItems.map((item) => (
-          <ListItem key={item.path} disablePadding sx={{ mb: 0.5 }}>
-            <ListItemButton
-              selected={location.pathname === item.path}
-              onClick={() => handleNavigation(item.path)}
-              sx={{
-                borderRadius: 2,
-                '&.Mui-selected': {
-                  backgroundColor: 'rgba(37, 99, 235, 0.1)',
-                  color: 'primary.main',
-                  '& .MuiListItemIcon-root': { 
-                    color: 'primary.main' 
-                  },
-                },
-                '&:hover': {
-                  backgroundColor: 'rgba(248, 250, 252, 0.8)',
-                },
-              }}
-            >
-              <ListItemIcon sx={{ minWidth: 40, color: 'text.secondary' }}>
-                {item.icon}
-              </ListItemIcon>
-              <ListItemText 
-                primary={item.title}
-                primaryTypographyProps={{ 
-                  fontSize: '0.875rem', 
-                  fontWeight: 500 
-                }}
-              />
-            </ListItemButton>
-          </ListItem>
-        ))}
-      </List>
-
-      <Divider />
-
-      {/* Footer */}
-      <Box sx={{ p: 2 }}>
-        <ListItemButton 
-          onClick={() => window.open('http://localhost:5173/', '_blank')}
-          sx={{ borderRadius: 2 }}
-        >
-          <ListItemIcon sx={{ minWidth: 40, color: 'text.secondary' }}>
-            <ExitToApp />
-          </ListItemIcon>
-          <ListItemText 
-            primary="Xem Website"
-            primaryTypographyProps={{ fontSize: '0.875rem' }}
-          />
-        </ListItemButton>
-      </Box>
-    </Box>
-  );
-
   return (
-    <Box sx={{ display: 'flex' }}>
-      {/* AppBar */}
-      <AppBar 
-        position="fixed" 
-        sx={{ 
-          zIndex: theme.zIndex.drawer + 1,
-          backgroundColor: 'background.paper',
-          color: 'text.primary',
-          boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
-          borderBottom: '1px solid rgba(226, 232, 240, 0.8)',
-        }}
-      >
-        <Toolbar>
+    <div className="admin-layout">
+      <aside className={`admin-sidebar ${isMobileMenuOpen ? 'mobile-open' : ''}`}>
+        <div className="admin-logo" onClick={() => navigate("/admin")}>
+          HOASHOP ADMIN
+        </div>
+        <nav>
+          <ul className="admin-menu">
+            {menu.map((item) => (
+              <li key={item.path} className="admin-menu-item">
+                <Link 
+                  to={item.path}
+                  className={location.pathname === item.path ? 'active' : ''}
+                  onClick={handleLinkClick}
+                >
+                  {item.label}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </nav>
+      </aside>
+      
+      <main className="admin-content">
+        <header className="admin-header">
           {isMobile && (
-            <IconButton
-              color="inherit"
-              aria-label="open drawer"
-              edge="start"
-              onClick={handleDrawerToggle}
-              sx={{ mr: 2 }}
+            <button 
+              className="mobile-menu-btn"
+              onClick={handleMobileMenuToggle}
+              aria-label="Toggle menu"
             >
-              <MenuIcon />
-            </IconButton>
+              ☰
+            </button>
           )}
-          
-          <Typography variant="h6" noWrap sx={{ flexGrow: 1, fontWeight: 600 }}>
-            {menuItems.find(item => item.path === location.pathname)?.title || 'HoaShop Admin'}
-          </Typography>
-          
-          <Avatar sx={{ bgcolor: 'primary.main', width: 32, height: 32 }}>
-            A
-          </Avatar>
-        </Toolbar>
-      </AppBar>
-
-      {/* Navigation Drawer */}
-      <Box 
-        component="nav" 
-        sx={{ 
-          width: { md: DRAWER_WIDTH }, 
-          flexShrink: { md: 0 } 
-        }}
-      >
-        {/* Mobile drawer */}
-        {isMobile && (
-          <Drawer
-            variant="temporary"
-            open={mobileOpen}
-            onClose={handleDrawerToggle}
-            ModalProps={{ keepMounted: true }}
-            sx={{
-              '& .MuiDrawer-paper': { 
-                boxSizing: 'border-box', 
-                width: DRAWER_WIDTH 
-              },
+          <span>Xin chào, Admin</span>
+          <button 
+            className="admin-logout" 
+            onClick={() => { 
+              localStorage.removeItem("admin_token"); 
+              navigate("/admin/login"); 
             }}
           >
-            {drawer}
-          </Drawer>
-        )}
-        
-        {/* Desktop drawer */}
-        {!isMobile && (
-          <Drawer
-            variant="permanent"
-            sx={{
-              '& .MuiDrawer-paper': { 
-                boxSizing: 'border-box', 
-                width: DRAWER_WIDTH 
-              },
-            }}
-            open
-          >
-            {drawer}
-          </Drawer>
-        )}
-      </Box>
-
-      {/* Main Content */}
-      <Box 
-        component="main" 
-        sx={{ 
-          flexGrow: 1,
-          p: 0,
-          width: { md: `calc(100% - ${DRAWER_WIDTH}px)` },
-          minHeight: '100vh',
-          backgroundColor: 'background.default',
-        }}
-      >
-        <Toolbar />
-        <Outlet />
-      </Box>
-    </Box>
+            Đăng xuất
+          </button>
+        </header>
+        <div className="admin-main">
+          <Outlet />
+        </div>
+      </main>
+      
+      {/* Mobile overlay */}
+      {isMobile && isMobileMenuOpen && (
+        <div 
+          className="mobile-overlay"
+          onClick={() => setIsMobileMenuOpen(false)}
+        />
+      )}
+    </div>
   );
-};
-
-export default AdminLayout; 
+} 

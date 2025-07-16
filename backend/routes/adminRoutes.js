@@ -9,7 +9,7 @@ const productController = require('../controllers/productController');
 const orderController = require('../controllers/orderController');
 const userController = require('../controllers/userController');
 const categoryController = require('../controllers/categoryController');
-const quickOrderController = require('../controllers/quickOrderController');
+const subCategoryController = require('../controllers/subCategoryController');
 
 // Multer config for product image upload - Cấu hình upload ảnh sản phẩm
 const storage = multer.diskStorage({
@@ -42,7 +42,6 @@ router.get('/dashboard/sales-stats', dashboardController.getSalesStats);
 router.get('/dashboard/product-stats', dashboardController.getProductStats);
 router.get('/dashboard/order-stats', dashboardController.getOrderStats);
 router.get('/dashboard/user-stats', dashboardController.getUserStats);
-router.get('/dashboard/quick-order-stats', dashboardController.getQuickOrderStats);
 router.get('/dashboard/revenue-chart', dashboardController.getRevenueChart);
 router.get('/dashboard/top-products', dashboardController.getTopProducts);
 router.get('/dashboard/low-stock', dashboardController.getLowStockProducts);
@@ -111,6 +110,7 @@ router.get('/users/export/excel', userController.exportUsersToExcel);
 // ===== CATEGORY ROUTES - API Quản lý danh mục =====
 // Basic CRUD - Các thao tác cơ bản
 router.get('/categories', categoryController.getAllCategories);
+router.get('/categories/tree', categoryController.getCategoryTree); // Route lấy cây danh mục
 router.get('/categories/:id', categoryController.getById);
 router.post('/categories', categoryController.create);
 router.put('/categories/:id', categoryController.update);
@@ -127,25 +127,5 @@ router.get('/categories/analytics/summary', categoryController.getCategorySummar
 router.get('/categories/:id/products', categoryController.getCategoryProducts);
 router.post('/categories/bulk/delete', categoryController.bulkDeleteCategories);
 router.post('/categories/subcategories/bulk/delete', categoryController.bulkDeleteSubCategories);
-
-// ===== QUICK ORDER ROUTES - API Quản lý đơn đặt nhanh =====
-// Basic CRUD - Các thao tác cơ bản
-router.get('/quick-orders', quickOrderController.getAllQuickOrders);
-router.get('/quick-orders/:id', quickOrderController.getQuickOrderById);
-router.put('/quick-orders/:id', quickOrderController.updateQuickOrder);
-router.delete('/quick-orders/:id', quickOrderController.deleteQuickOrder);
-
-// Order management - Quản lý đơn hàng
-router.put('/quick-orders/:id/status', quickOrderController.updateQuickOrderStatus);
-router.post('/quick-orders/:id/convert', quickOrderController.convertToRegularOrder);
-
-// Bulk operations - Thao tác hàng loạt
-router.post('/quick-orders/bulk/update-status', quickOrderController.bulkUpdateStatus);
-router.post('/quick-orders/bulk/convert', quickOrderController.bulkConvertToRegularOrders);
-router.post('/quick-orders/bulk/delete', quickOrderController.bulkDeleteQuickOrders);
-
-// Analytics & Export - Thống kê và xuất dữ liệu
-router.get('/quick-orders/analytics/summary', quickOrderController.getQuickOrdersSummary);
-router.get('/quick-orders/export/excel', quickOrderController.exportQuickOrdersToExcel);
 
 module.exports = router; 

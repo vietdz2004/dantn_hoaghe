@@ -1,5 +1,5 @@
 const { Category, SubCategory, Product } = require('../models');
-const { isDatabaseAvailable, getMockData } = require('../models/database');
+const { isDatabaseAvailable, getMockData, sequelize } = require('../models/database');
 const { QueryTypes } = require('sequelize');
 
 // Lấy tất cả danh mục với số lượng sản phẩm (Customer version)
@@ -355,6 +355,48 @@ exports.bulkDeleteSubCategories = async (req, res) => {
       success: false,
       message: 'Lỗi khi xóa hàng loạt danh mục con',
       error: error.message 
+    });
+  }
+};
+
+// ADMIN: Get all categories with their sub-categories (tree structure)
+exports.getCategoryTree = async (req, res) => {
+  try {
+    console.log('🌳 getCategoryTree called');
+    
+    // Lấy tất cả danh mục cha
+    const categories = await Category.findAll({
+      order: [['id_DanhMuc', 'ASC']],
+      raw: true
+    });
+    console.log('📂 Categories found:', categories.length);
+    
+    // Lấy tất cả danh mục con
+    const subCategories = await SubCategory.findAll({
+      order: [['id_DanhMuc', 'ASC']],
+      raw: true
+    });
+    console.log('📁 SubCategories found:', subCategories.length);
+    
+    // Gộp subCategories vào từng category
+    const tree = categories.map(cat => ({
+      ...cat,
+      subCategories: subCategories.filter(sc => sc.id_DanhMuc === cat.id_DanhMuc)
+    }));
+    
+    console.log('🌲 Tree built:', tree.length, 'parents');
+    
+    res.json({
+      success: true,
+      data: tree,
+      message: 'Lấy danh mục cha và con thành công'
+    });
+  } catch (error) {
+    console.error('❌ Error in getCategoryTree:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Lỗi server khi lấy danh mục cha-con',
+      error: error.message
     });
   }
 };

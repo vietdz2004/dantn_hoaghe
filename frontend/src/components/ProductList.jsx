@@ -33,7 +33,7 @@ const calculateDiscountPercent = (originalPrice, salePrice) => {
 };
 
 // ProductList: Hiển thị danh sách sản phẩm dạng lưới
-const ProductList = ({ products, onProductClick }) => {
+const ProductList = ({ products, onProductClick, highlightKeyword }) => {
   const { user } = useAuth();
   const navigate = useNavigate();
   return (
@@ -85,7 +85,9 @@ const ProductList = ({ products, onProductClick }) => {
                     }}
                     sx={{ cursor: 'pointer' }}
                   >
-                    {product.tenSp}
+                    {highlightKeyword
+                      ? highlightKeyword(product.tenSp)
+                      : product.tenSp}
                   </Typography>
                   <Box className={styles.priceBlock}>
                     {hasDiscount ? (

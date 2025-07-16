@@ -229,21 +229,49 @@ export const reviewAPI = {
 };
 
 // ============================================
-// VOUCHER SERVICES - Dịch vụ voucher/mã giảm giá
+// WISHLIST SERVICES - Dịch vụ danh sách yêu thích
 // ============================================
-export const voucherAPI = {
-  getAvailable: () => api.get('/vouchers/available'),
-  validate: (code) => api.post('/vouchers/validate', { code }),
-  apply: (code, orderTotal) => api.post('/vouchers/apply', { code, orderTotal }),
+export const wishlistAPI = {
+  get: () => {
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    const userId = user.id_NguoiDung;
+    
+    if (!userId) {
+      throw new Error('User must be logged in to get wishlist');
+    }
+    
+    return api.get(`/wishlist/${userId}`);
+  },
+  add: (productId) => {
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    const userId = user.id_NguoiDung;
+    
+    if (!userId) {
+      throw new Error('User must be logged in to add to wishlist');
+    }
+    
+    return api.post('/wishlist/add', { userId, productId });
+  },
+  remove: (productId) => {
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    const userId = user.id_NguoiDung;
+    
+    if (!userId) {
+      throw new Error('User must be logged in to remove from wishlist');
+    }
+    
+    return api.delete(`/wishlist/${userId}/${productId}`);
+  }
 };
 
 // ============================================
-// QUICK ORDER SERVICES - Dịch vụ đặt hàng nhanh
+// VOUCHER SERVICES - Dịch vụ voucher
 // ============================================
-export const quickOrderAPI = {
-  create: (orderData) => api.post('/quick-orders', orderData),
-  getById: (id) => api.get(`/quick-orders/${id}`),
-  track: (code) => api.get(`/quick-orders/track/${code}`),
+export const voucherAPI = {
+  validate: (code, orderTotal, userId, productIds) => 
+    api.post('/vouchers/validate', { code, orderTotal, userId, productIds }),
+  apply: (code, orderId) => 
+    api.post('/vouchers/apply', { code, orderId })
 };
 
 // ============================================

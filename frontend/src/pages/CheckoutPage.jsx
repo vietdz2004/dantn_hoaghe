@@ -1,8 +1,9 @@
 import React, { useState, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Stepper, Step, StepLabel, Button, Typography, Box, Paper, TextField, RadioGroup, FormControlLabel, Radio, CircularProgress } from '@mui/material';
+import { Stepper, Step, StepLabel, Button, Typography, Box, Paper, TextField, RadioGroup, FormControlLabel, Radio, CircularProgress, Divider } from '@mui/material';
 import { CartContext } from '../contexts/CartContext';
 import AuthContext from '../contexts/AuthContext';
+import VoucherInput from '../components/VoucherInput';
 import api from '../services/api';
 
 const steps = ['Thông tin khách hàng', 'Địa chỉ giao hàng', 'Phương thức thanh toán', 'Xác nhận đơn hàng'];
@@ -18,7 +19,7 @@ const initialShipping = {
 };
 
 const CheckoutPage = () => {
-  const { cartItems, totalAmount, clearCart } = useContext(CartContext);
+  const { cartItems, totalAmount, clearCart, voucher, applyVoucher, removeVoucher } = useContext(CartContext);
   const { user } = useContext(AuthContext);
   const navigate = useNavigate();
 
@@ -28,6 +29,19 @@ const CheckoutPage = () => {
   const [paymentMethod, setPaymentMethod] = useState('COD');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  // Tính toán tổng tiền cuối cùng
+  const finalTotal = voucher ? voucher.calculation.finalTotal : totalAmount;
+
+  // Xử lý khi voucher được áp dụng
+  const handleVoucherApplied = (voucherData) => {
+    applyVoucher(voucherData);
+  };
+
+  // Xử lý khi voucher bị xóa
+  const handleVoucherRemoved = () => {
+    removeVoucher();
+  };
 
   // Validate từng bước
   const validateStep = () => {
@@ -91,8 +105,9 @@ const CheckoutPage = () => {
           ghiChu: shipping.note,
           phuongThucThanhToan: paymentMethod,
           sanPham: formattedCartItems,
-          tongThanhToan: totalAmount,
-          id_NguoiDung: user?.id_NguoiDung
+          tongThanhToan: finalTotal, // Use finalTotal here
+          id_NguoiDung: user?.id_NguoiDung,
+          maVoucher: voucher?.voucher?.maVoucher // Thêm mã voucher nếu có
         });
 
         // 1. Tạo đơn hàng
@@ -104,8 +119,9 @@ const CheckoutPage = () => {
           ghiChu: shipping.note,
           phuongThucThanhToan: paymentMethod,
           sanPham: formattedCartItems,
-          tongThanhToan: totalAmount,
-          id_NguoiDung: user?.id_NguoiDung
+          tongThanhToan: finalTotal, // Use finalTotal here
+          id_NguoiDung: user?.id_NguoiDung,
+          maVoucher: voucher?.voucher?.maVoucher // Thêm mã voucher nếu có
         });
         
         console.log('✅ Order response:', orderRes);
@@ -124,9 +140,9 @@ const CheckoutPage = () => {
         
         // 2. Xử lý thanh toán theo phương thức đã chọn
         if (paymentMethod === 'VNPay') {
-          await handleVNPayPayment(order, totalAmount);
+          await handleVNPayPayment(order, finalTotal);
         } else if (paymentMethod === 'ZaloPay') {
-          await handleZaloPayPayment(order, totalAmount);
+          await handleZaloPayPayment(order, finalTotal);
         } else {
           // 3. Thanh toán COD: chuyển sang trang thành công
           console.log('✅ COD order completed, clearing cart and redirecting...');
@@ -225,15 +241,64 @@ const CheckoutPage = () => {
       case 3:
         return (
           <Box>
-            <Typography variant="h6">Xác nhận đơn hàng</Typography>
-            <Typography>Khách hàng: {customerInfo.name} - {customerInfo.phone}</Typography>
-            <Typography>Địa chỉ: {shipping.address}</Typography>
-            <Typography>Phương thức thanh toán: {
-              paymentMethod === 'VNPay' ? 'VNPay' : 
-              paymentMethod === 'ZaloPay' ? 'ZaloPay' : 'COD'
-            }</Typography>
-            <Typography>Số sản phẩm: {cartItems.length}</Typography>
-            <Typography>Tổng tiền: {totalAmount.toLocaleString()}₫</Typography>
+            <Typography variant="h6" sx={{ mb: 2 }}>Xác nhận đơn hàng</Typography>
+            
+            <Box sx={{ mb: 2 }}>
+              <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 1 }}>Thông tin khách hàng</Typography>
+              <Typography>Họ tên: {customerInfo.name}</Typography>
+              <Typography>Số điện thoại: {customerInfo.phone}</Typography>
+              <Typography>Email: {customerInfo.email || 'Không có'}</Typography>
+            </Box>
+
+            <Box sx={{ mb: 2 }}>
+              <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 1 }}>Địa chỉ giao hàng</Typography>
+              <Typography>Địa chỉ: {shipping.address}</Typography>
+              {shipping.note && <Typography>Ghi chú: {shipping.note}</Typography>}
+            </Box>
+
+            <Box sx={{ mb: 2 }}>
+              <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 1 }}>Phương thức thanh toán</Typography>
+              <Typography>{
+                paymentMethod === 'VNPay' ? 'VNPay (ATM, QR, thẻ quốc tế)' : 
+                paymentMethod === 'ZaloPay' ? 'ZaloPay (Ví điện tử, thẻ ATM)' : 
+                'Thanh toán khi nhận hàng (COD)'
+              }</Typography>
+            </Box>
+
+            <Divider sx={{ my: 2 }} />
+
+            <Box sx={{ mb: 2 }}>
+              <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 1 }}>Tổng quan đơn hàng</Typography>
+              <Typography>Số sản phẩm: {cartItems.length}</Typography>
+              <Typography>Tổng tiền hàng: {totalAmount.toLocaleString('vi-VN')}₫</Typography>
+              
+              {/* Voucher input ở bước xác nhận */}
+              <Box sx={{ my: 2 }}>
+                <VoucherInput
+                  onVoucherApplied={handleVoucherApplied}
+                  onVoucherRemoved={handleVoucherRemoved}
+                  orderTotal={totalAmount}
+                  appliedVoucher={voucher}
+                />
+              </Box>
+              
+              {voucher && (
+                <>
+                  <Typography color="success.main">
+                    Giảm giá: -{voucher.calculation.discountAmount.toLocaleString('vi-VN')}₫
+                  </Typography>
+                  <Typography variant="h6" color="primary" sx={{ fontWeight: 'bold' }}>
+                    Tổng thanh toán: {finalTotal.toLocaleString('vi-VN')}₫
+                  </Typography>
+                </>
+              )}
+              
+              {!voucher && (
+                <Typography variant="h6" color="primary" sx={{ fontWeight: 'bold' }}>
+                  Tổng thanh toán: {finalTotal.toLocaleString('vi-VN')}₫
+                </Typography>
+              )}
+            </Box>
           </Box>
         );
       default:

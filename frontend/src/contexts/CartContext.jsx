@@ -15,7 +15,9 @@ const CART_ACTIONS = {
   UPDATE_QUANTITY: 'UPDATE_QUANTITY', // Cập nhật số lượng
   CLEAR_CART: 'CLEAR_CART',       // Xóa toàn bộ giỏ hàng
   LOAD_CART: 'LOAD_CART',         // Tải giỏ hàng từ DB/localStorage
-  SET_LOADING: 'SET_LOADING'      // Cập nhật trạng thái loading
+  SET_LOADING: 'SET_LOADING',     // Cập nhật trạng thái loading
+  SET_VOUCHER: 'SET_VOUCHER',     // Áp dụng voucher
+  REMOVE_VOUCHER: 'REMOVE_VOUCHER' // Xóa voucher
 };
 
 // ============================================
@@ -86,10 +88,16 @@ const cartReducer = (state, action) => {
     }
 
     case CART_ACTIONS.CLEAR_CART:
-      return { ...state, items: [] };
+      return { ...state, items: [], voucher: null };
 
     case CART_ACTIONS.LOAD_CART:
       return { ...state, items: action.payload.items || [] };
+
+    case CART_ACTIONS.SET_VOUCHER:
+      return { ...state, voucher: action.payload.voucher };
+
+    case CART_ACTIONS.REMOVE_VOUCHER:
+      return { ...state, voucher: null };
 
     default:
       return state;
@@ -99,7 +107,8 @@ const cartReducer = (state, action) => {
 // State ban đầu của giỏ hàng
 const initialState = {
   items: [],
-  loading: false
+  loading: false,
+  voucher: null
 };
 
 // ============================================
@@ -324,6 +333,16 @@ export const CartProvider = ({ children }) => {
     dispatch({ type: CART_ACTIONS.CLEAR_CART });
   };
 
+  // Áp dụng voucher
+  const applyVoucher = (voucherData) => {
+    dispatch({ type: CART_ACTIONS.SET_VOUCHER, payload: { voucher: voucherData } });
+  };
+
+  // Xóa voucher
+  const removeVoucher = () => {
+    dispatch({ type: CART_ACTIONS.REMOVE_VOUCHER });
+  };
+
   // ============================================
   // COMPUTED VALUES - Giá trị tính toán
   // ============================================
@@ -358,12 +377,15 @@ export const CartProvider = ({ children }) => {
     totalItems,
     totalAmount,
     loading: state.loading,
+    voucher: state.voucher, // Thêm voucher vào context value
     
     // Actions
     addToCart,
     removeFromCart,
     updateQuantity,
     clearCart,
+    applyVoucher,
+    removeVoucher,
     
     // Helpers
     isInCart,

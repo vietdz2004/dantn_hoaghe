@@ -38,6 +38,7 @@ const ProductPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [pageTitle, setPageTitle] = useState('Danh Sách Sản Phẩm');
+  const [subCategoryName, setSubCategoryName] = useState('');
   
   // Thông tin phân trang từ server
   const [pagination, setPagination] = useState({
@@ -88,25 +89,36 @@ const ProductPage = () => {
     };
 
     // Cập nhật tiêu đề trang dựa trên URL params
-    if (urlFilters.discount === 'true') {
-      setPageTitle('🔥 Sản phẩm giảm giá');
-      apiParams.discount = true;
-    } else if (urlFilters.popular === 'true') {
-      setPageTitle('⭐ Sản phẩm phổ biến');
-      apiParams.popular = true;
-    } else if (urlFilters.new === 'true') {
-      setPageTitle('🆕 Sản phẩm mới');
-      apiParams.new = true;
-    } else if (urlFilters.bestseller === 'true') {
-      setPageTitle('🏆 Sản phẩm bán chạy');
-      apiParams.bestseller = true;
+    const subcatId = searchParams.get('subcategory');
+    if (subcatId) {
+      // Tìm tên danh mục con từ categories (có thể lồng subcategories trong mỗi category)
+      let foundSubcat = null;
+      for (const cat of categories) {
+        if (cat.SubCategories && Array.isArray(cat.SubCategories)) {
+          const sub = cat.SubCategories.find(s => s.id_DanhMucChiTiet?.toString() === subcatId);
+          if (sub) {
+            foundSubcat = sub;
+            break;
+          }
+        }
+      }
+      if (foundSubcat) {
+        setPageTitle(foundSubcat.tenDanhMucChiTiet);
+        setSubCategoryName(foundSubcat.tenDanhMucChiTiet);
+      } else {
+        setPageTitle('Sản phẩm theo danh mục con');
+        setSubCategoryName('');
+      }
+      apiParams.subcat = subcatId;
     } else if (urlFilters.category) {
       // Hiển thị tên category cụ thể
       const cat = categories.find(c => c.id_DanhMuc.toString() === urlFilters.category);
       setPageTitle(cat ? `${cat.tenDanhMuc}` : 'Sản phẩm theo danh mục');
+      setSubCategoryName('');
       apiParams.category = urlFilters.category;
     } else {
       setPageTitle('Danh Sách Sản Phẩm');
+      setSubCategoryName('');
     }
 
     // Áp dụng filters từ form - CHỈ CÒN PRICE RANGE
@@ -225,7 +237,13 @@ const ProductPage = () => {
     }
   }, []);
 
-
+  function highlightKeyword(text, keyword) {
+    if (!keyword) return text;
+    const regex = new RegExp(`(${keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'ig');
+    return text.split(regex).map((part, i) =>
+      regex.test(part) ? <b key={i} style={{color:'#e91e63'}}>{part}</b> : part
+    );
+  }
 
   // ============================================
   // EFFECTS - Xử lý side effects
@@ -289,6 +307,8 @@ const ProductPage = () => {
       </Container>
     );
   }
+
+  const searchKeyword = searchParams.get('search') || '';
 
   return (
     <Container maxWidth="lg" className={styles.container}>
@@ -387,7 +407,11 @@ const ProductPage = () => {
 
       {/* Products List - Danh sách sản phẩm */}
       {products.length > 0 ? (
-        <ProductList products={products} onProductClick={handleViewDetail} />
+        <ProductList 
+          products={products} 
+          onProductClick={handleViewDetail}
+          highlightKeyword={searchKeyword ? (text => highlightKeyword(text, searchKeyword)) : undefined}
+        />
       ) : (
         <Box className={styles.noResults}>
           <Typography variant="h6" color="text.secondary">

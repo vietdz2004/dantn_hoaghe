@@ -17,7 +17,10 @@ import {
   IconButton,
   Snackbar,
   Alert,
-  Breadcrumbs
+  Breadcrumbs,
+  Container,
+  Card,
+  CardContent
 } from '@mui/material';
 import { 
   ShoppingCart, 
@@ -32,7 +35,8 @@ import {
   Category,
   Tag,
   Inventory,
-  Add
+  Add,
+  Remove
 } from '@mui/icons-material';
 import { useCart } from '../contexts/CartContext';
 import { useAuth } from '../contexts/AuthContext';
@@ -255,81 +259,94 @@ const ProductDetailPage = () => {
     }
   };
 
-  if (loading) return <Box className={styles.loading}>Đang tải...</Box>;
-  if (error) return <Box className={styles.error}>{error}</Box>;
+  if (loading) return (
+    <Container maxWidth="lg" sx={{ py: 4, textAlign: 'center' }}>
+      <Typography variant="h6">Đang tải...</Typography>
+    </Container>
+  );
+  
+  if (error) return (
+    <Container maxWidth="lg" sx={{ py: 4 }}>
+      <Alert severity="error">{error}</Alert>
+    </Container>
+  );
+  
   if (!product) return null;
 
   return (
-    <Box className={styles.detailWrap}>
+    <Container maxWidth="lg" sx={{ py: 4 }}>
       {/* Breadcrumbs */}
-      <Box className={styles.breadcrumbWrap}>
-        <Breadcrumbs aria-label="breadcrumb" className={styles.breadcrumbs}>
-          <Link color="inherit" href="/" className={styles.breadcrumbLink}>
+      <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <Breadcrumbs aria-label="breadcrumb">
+          <Link color="inherit" href="/">
             Trang chủ
           </Link>
-          <Link color="inherit" href="/products" className={styles.breadcrumbLink}>
+          <Link color="inherit" href="/products">
             Sản phẩm
           </Link>
           <Typography color="text.primary">{product.tenSp}</Typography>
         </Breadcrumbs>
-        <IconButton onClick={() => navigate(-1)} className={styles.backBtn}>
+        <IconButton onClick={() => navigate(-1)}>
           <ArrowBack />
         </IconButton>
       </Box>
 
-      <Grid container spacing={4} className={styles.productGrid}>
+      <Grid container spacing={4}>
         {/* Hình ảnh sản phẩm */}
         <Grid item xs={12} md={6}>
-          <Box className={styles.imageSection}>
-            <Box className={styles.mainImageWrap}>
-              {imageLoading && !imageError && (
-                <Box className={styles.imageLoader}>
-                  <Typography>Đang tải hình ảnh...</Typography>
-                </Box>
-              )}
+          <Card sx={{ position: 'relative' }}>
+            <Box sx={{ position: 'relative', paddingTop: '100%' }}>
               <img
                 src={formatImageUrl(product.hinhAnh)}
                 alt={product.tenSp}
-                className={`${styles.mainImage} ${imageLoading ? styles.imageHidden : ''}`}
+                style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'cover'
+                }}
                 onError={(e) => {
-                  console.log('Image load error:', e.target.src);
-                  setImageError(true);
-                  setImageLoading(false);
                   e.target.src = '/no-image.svg';
                 }}
-                onLoad={() => {
-                  console.log('Image loaded successfully:', formatImageUrl(product.hinhAnh));
-                  setImageLoading(false);
-                  setImageError(false);
-                }}
               />
-              <Box className={styles.imageActions}>
+              <Box sx={{ position: 'absolute', top: 16, right: 16, display: 'flex', flexDirection: 'column', gap: 1 }}>
                 <IconButton 
                   onClick={handleToggleFavorite}
-                  className={`${styles.favoriteBtn} ${isFavorite ? styles.favoriteActive : ''}`}
+                  sx={{ 
+                    bgcolor: 'white', 
+                    color: isFavorite ? 'red' : 'gray',
+                    '&:hover': { bgcolor: 'rgba(255,255,255,0.9)' }
+                  }}
                 >
                   <Favorite />
                 </IconButton>
-                <IconButton onClick={handleShare} className={styles.shareBtn}>
+                <IconButton 
+                  onClick={handleShare}
+                  sx={{ 
+                    bgcolor: 'white', 
+                    color: 'gray',
+                    '&:hover': { bgcolor: 'rgba(255,255,255,0.9)' }
+                  }}
+                >
                   <Share />
                 </IconButton>
               </Box>
             </Box>
-          </Box>
+          </Card>
         </Grid>
 
         {/* Thông tin sản phẩm */}
         <Grid item xs={12} md={6}>
-          <Box className={styles.infoSection}>
-
-            
+          <Box>
             {/* Tên sản phẩm */}
-            <Typography variant="h4" className={styles.productName}>
+            <Typography variant="h4" sx={{ fontWeight: 'bold', mb: 2 }}>
               {product.tenSp}
             </Typography>
 
             {/* Đánh giá */}
-            <Box className={styles.ratingSection}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
               <Rating value={4.5} readOnly size="small" />
               <Typography variant="body2" color="text.secondary">
                 (0 đánh giá)
@@ -337,104 +354,81 @@ const ProductDetailPage = () => {
             </Box>
 
             {/* Giá */}
-            <Box className={styles.priceSection}>
-              {product.giaKhuyenMai && Number(product.giaKhuyenMai) > 0 && Number(product.giaKhuyenMai) < Number(product.gia) ? (
-                <>
-                  <Typography variant="h5" className={styles.salePrice}>
-                    {formatGia(product.giaKhuyenMai)}
-                  </Typography>
-                  <Typography variant="body1" className={styles.oldPrice}>
+            <Card sx={{ bgcolor: '#fce4ec', p: 2, mb: 2 }}>
+              <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 2 }}>
+                {product.giaKhuyenMai && Number(product.giaKhuyenMai) > 0 && Number(product.giaKhuyenMai) < Number(product.gia) ? (
+                  <>
+                    <Typography variant="h5" sx={{ color: '#e91e63', fontWeight: 'bold' }}>
+                      {formatGia(product.giaKhuyenMai)}
+                    </Typography>
+                    <Typography variant="body1" sx={{ textDecoration: 'line-through', color: 'text.secondary' }}>
+                      {formatGia(product.gia)}
+                    </Typography>
+                    <Chip 
+                      label={`-${Math.round(((product.gia - product.giaKhuyenMai) / product.gia) * 100)}%`}
+                      color="error"
+                      size="small"
+                    />
+                  </>
+                ) : (
+                  <Typography variant="h5" sx={{ color: '#e91e63', fontWeight: 'bold' }}>
                     {formatGia(product.gia)}
                   </Typography>
-                  <Chip 
-                    label={`-${Math.round(((product.gia - product.giaKhuyenMai) / product.gia) * 100)}%`}
-                    color="error"
-                    size="small"
-                    className={styles.discountChip}
-                  />
-                </>
-              ) : (
-                <Typography variant="h5" className={styles.salePrice}>
-                  {formatGia(product.gia)}
-                </Typography>
-              )}
-            </Box>
+                )}
+              </Box>
+            </Card>
 
             {/* Thông tin chi tiết */}
-            <Box className={styles.detailsSection}>
-              <Typography variant="body2" color="text.secondary">
-                Mã: SP{(product.maSanPham || product.id_SanPham || 0).toString().padStart(6, '0')}
-              </Typography>
-            </Box>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+              Mã: SP{(product.maSanPham || product.id_SanPham || 0).toString().padStart(6, '0')}
+            </Typography>
 
             {/* Thông tin tồn kho */}
-            <Box className={styles.inventorySection}>
+            <Box sx={{ mb: 2 }}>
               {(() => {
                 const stock = Number(product.soLuongTon) || 0;
                 const minStock = Number(product.soLuongToiThieu) || 5;
                 
                 if (stock <= 0) {
-                  return (
-                    <Chip 
-                      label="Hết hàng"
-                      color="error"
-                      className={styles.stockChip}
-                    />
-                  );
+                  return <Chip label="Hết hàng" color="error" />;
                 } else if (stock <= minStock) {
-                  return (
-                    <Chip 
-                      label={`Còn ${stock} sản phẩm`}
-                      color="warning"
-                      className={styles.stockChip}
-                    />
-                  );
+                  return <Chip label={`Còn ${stock} sản phẩm`} color="warning" />;
                 } else {
-                  return (
-                    <Chip 
-                      label={`Còn ${stock} sản phẩm`}
-                      color="success"
-                      className={styles.stockChip}
-                    />
-                  );
+                  return <Chip label={`Còn ${stock} sản phẩm`} color="success" />;
                 }
               })()}
             </Box>
 
-            <Divider className={styles.divider} />
+            <Divider sx={{ my: 2 }} />
 
             {/* Số lượng */}
-            <Box className={styles.quantitySection}>
-              <Typography variant="body1" className={styles.quantityLabel}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
+              <Typography variant="body1" sx={{ fontWeight: 'bold' }}>
                 Số lượng:
               </Typography>
-              <Box className={styles.quantityControls}>
-                <Button 
-                  variant="outlined" 
-                  size="small"
+              <Box sx={{ display: 'flex', alignItems: 'center', border: '1px solid #ddd', borderRadius: 1 }}>
+                <IconButton 
                   onClick={() => handleQuantityChange(quantity - 1)}
                   disabled={quantity <= 1}
-                  className={styles.quantityBtn}
+                  size="small"
                 >
-                  -
-                </Button>
-                <Typography variant="body1" className={styles.quantityValue}>
+                  <Remove />
+                </IconButton>
+                <Typography sx={{ px: 2, minWidth: 40, textAlign: 'center' }}>
                   {quantity}
                 </Typography>
-                <Button 
-                  variant="outlined" 
-                  size="small"
+                <IconButton 
                   onClick={() => handleQuantityChange(quantity + 1)}
                   disabled={quantity >= Math.min(99, Number(product.soLuongTon) || 0)}
-                  className={styles.quantityBtn}
+                  size="small"
                 >
-                  +
-                </Button>
+                  <Add />
+                </IconButton>
               </Box>
             </Box>
 
             {/* Buttons hành động */}
-            <Box className={styles.actionSection}>
+            <Box sx={{ display: 'flex', gap: 2, mb: 3 }}>
               <Button 
                 variant="outlined" 
                 color="primary" 
@@ -442,7 +436,7 @@ const ProductDetailPage = () => {
                 startIcon={<ShoppingCart />}
                 onClick={handleAddToCart}
                 disabled={Number(product.soLuongTon) <= 0}
-                className={styles.addToCartBtn}
+                fullWidth
               >
                 {Number(product.soLuongTon) <= 0 ? 'Hết hàng' : 'Thêm giỏ hàng'}
               </Button>
@@ -450,47 +444,46 @@ const ProductDetailPage = () => {
                 variant="contained" 
                 color="primary" 
                 size="large"
-                startIcon={<Add />}
                 onClick={handleOrder}
                 disabled={Number(product.soLuongTon) <= 0}
-                className={styles.orderNowBtn}
+                fullWidth
               >
                 Đặt hàng
               </Button>
             </Box>
 
             {/* Thông tin giao hàng */}
-            <Box className={styles.shippingInfo}>
+            <Card sx={{ bgcolor: '#f5f5f5', p: 2 }}>
               <Typography variant="body2" color="text.secondary">
                 ✓ Giao hàng miễn phí nội thành | ✓ Đảm bảo hoa tươi 100%
               </Typography>
               {Number(product.soLuongTon) > 0 && (
-                <Typography variant="body2" color="success.main" className={styles.availabilityInfo}>
+                <Typography variant="body2" color="success.main" sx={{ mt: 1 }}>
                   🚚 Có thể giao hàng ngay trong ngày
                 </Typography>
               )}
-            </Box>
+            </Card>
           </Box>
         </Grid>
       </Grid>
 
       {/* Mô tả sản phẩm */}
-      <Box className={styles.descriptionSection}>
-        <Typography variant="h6" className={styles.sectionTitle}>
+      <Card sx={{ mt: 4, p: 3 }}>
+        <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 2 }}>
           Mô tả sản phẩm
         </Typography>
-        <Typography variant="body1" className={styles.description}>
+        <Typography variant="body1">
           {product.moTa}
         </Typography>
-      </Box>
+      </Card>
 
       {/* Đánh giá sản phẩm */}
-      <Box className={styles.reviewSection}>
-        <Typography variant="h6" className={styles.sectionTitle}>
+      <Card sx={{ mt: 4, p: 3 }}>
+        <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 2 }}>
           Đánh giá sản phẩm
         </Typography>
         {reviews.length === 0 ? (
-          <Box className={styles.noReviews}>
+          <Box sx={{ textAlign: 'center', py: 4 }}>
             <Typography variant="body2" color="text.secondary">
               {userHasPurchased 
                 ? 'Chưa có đánh giá. Hãy là người đầu tiên đánh giá sản phẩm!' 
@@ -502,7 +495,33 @@ const ProductDetailPage = () => {
                 variant="outlined" 
                 color="primary" 
                 size="small"
-                className={styles.reviewBtn}
+                startIcon={<Description />}
+                onClick={handleOpenReviewForm}
+                sx={{ mt: 2 }}
+              >
+                Viết đánh giá
+              </Button>
+            )}
+          </Box>
+        ) : (
+          <Box>
+            {reviews.map((review, index) => (
+              <Card key={index} sx={{ mb: 2, p: 2, bgcolor: '#f9f9f9' }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>
+                    {review.userName || 'Khách hàng'}
+                  </Typography>
+                  <Rating value={review.rating || 5} readOnly size="small" />
+                </Box>
+                <Typography variant="body2">
+                  {review.content}
+                </Typography>
+              </Card>
+            ))}
+            {userHasPurchased && (
+              <Button 
+                variant="outlined" 
+                color="primary" 
                 startIcon={<Description />}
                 onClick={handleOpenReviewForm}
               >
@@ -510,59 +529,22 @@ const ProductDetailPage = () => {
               </Button>
             )}
           </Box>
-        ) : (
-          <Box className={styles.reviewList}>
-            {reviews.map((rv) => (
-              <Box key={rv.id_DanhGia} className={styles.reviewItem}>
-                <Box className={styles.reviewHeader}>
-                  <Box className={styles.reviewUser}>
-                    <Typography variant="subtitle2" className={styles.userName}>
-                      {rv.tenNguoiDung || rv.hoTen || 'Khách hàng'}
-                    </Typography>
-                    <Rating value={rv.danhGiaSao || rv.soSao || 5} readOnly size="small" />
-                  </Box>
-                  <Typography variant="caption" color="text.secondary">
-                    {new Date(rv.ngayDanhGia || rv.createdAt || Date.now()).toLocaleDateString('vi-VN')}
-                  </Typography>
-                </Box>
-                <Typography variant="body2" className={styles.reviewContent}>
-                  {rv.noiDung || rv.binhLuan || 'Không có nội dung đánh giá'}
-                </Typography>
-              </Box>
-            ))}
-          </Box>
         )}
-      </Box>
+      </Card>
 
       {/* Sản phẩm liên quan */}
       {relatedProducts.length > 0 && (
-        <Box className={styles.relatedSection}>
-          <Typography variant="h6" className={styles.sectionTitle}>
+        <Card sx={{ mt: 4, p: 3 }}>
+          <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 3 }}>
             🔗 Sản phẩm liên quan
           </Typography>
-          <Typography variant="body2" color="text.secondary" className={styles.sectionSubtitle}>
-            Được gợi ý dựa trên thuật toán ML: danh mục, thương hiệu, khoảng giá tương tự
-          </Typography>
-          
-          <Box className={styles.relatedProductsGrid}>
-            <ProductList 
-              products={relatedProducts} 
-              onProductClick={handleRelatedProductClick}
-              showBadges={true}
-              variant="compact"
-            />
-          </Box>
-          
-          {/* Thông tin về thuật toán gợi ý */}
-          <Box className={styles.algorithmInfo}>
-            <Typography variant="caption" color="text.secondary">
-              💡 Gợi ý dựa trên: Cùng danh mục ({product.tenDanhMuc}), 
-              cùng thương hiệu ({product.thuongHieu}), 
-              khoảng giá tương tự (±30%), 
-              tình trạng khuyến mãi và tồn kho
-            </Typography>
-          </Box>
-        </Box>
+          <ProductList 
+            products={relatedProducts} 
+            onProductClick={handleRelatedProductClick}
+            showBadges={true}
+            variant="compact"
+          />
+        </Card>
       )}
 
       {/* Review Form Modal */}
@@ -590,7 +572,7 @@ const ProductDetailPage = () => {
           {notificationMessage}
         </Alert>
       </Snackbar>
-    </Box>
+    </Container>
   );
 };
 

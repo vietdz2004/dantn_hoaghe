@@ -78,7 +78,8 @@ const OrderPage = () => {
             throw new Error('No orders found, using mock data');
           }
           
-          setOrders(response.data || []);
+          const ordersData = response.data?.data || response.data || [];
+          setOrders(Array.isArray(ordersData) ? ordersData : []);
           setError('');
         } catch (apiError) {
           console.warn('❌ API Error:', apiError);
@@ -316,7 +317,7 @@ const OrderPage = () => {
                     <Grid container spacing={2}>
                       <Grid item xs={12} md={8}>
                         <Typography variant="subtitle2" gutterBottom>
-                          Sản phẩm ({order.itemCount || order.OrderDetails?.length || 0} sản phẩm):
+                          Sản phẩm ({order.OrderDetails?.length || 0} sản phẩm):
                         </Typography>
                         {order.OrderDetails && order.OrderDetails.length > 0 ? (
                           <List dense>
@@ -331,7 +332,7 @@ const OrderPage = () => {
                                 </ListItemAvatar>
                                 <ListItemText
                                   primary={item.tenSp}
-                                  secondary={`Số lượng: ${item.soLuong} × ${formatCurrency(item.giaTaiThoiDiem)}`}
+                                  secondary={`Số lượng: ${item.soLuongMua ?? item.soLuong ?? '-'} × ${formatCurrency(item.donGiaLucMua ?? item.giaTaiThoiDiem ?? item.giaSanPham ?? 0)}`}
                                 />
                               </ListItem>
                             ))}

@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const categoryController = require('../controllers/categoryController');
+const subCategoryController = require('../controllers/subCategoryController');
 
 // Get all categories
 router.get('/', categoryController.getAll);
@@ -90,5 +91,7 @@ router.get('/:id', categoryController.getById);
 router.post('/', categoryController.create);
 router.put('/:id', categoryController.update);
 router.delete('/:id', categoryController.delete);
+router.get('/sub-categories', subCategoryController.getAll);
+router.get('/tree', categoryController.getCategoryTree);
 
 module.exports = router; 

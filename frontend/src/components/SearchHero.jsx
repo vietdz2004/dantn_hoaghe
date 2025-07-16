@@ -176,6 +176,14 @@ const SearchHero = () => {
     }
   };
 
+  function highlightKeyword(text, keyword) {
+    if (!keyword) return text;
+    const regex = new RegExp(`(${keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'ig');
+    return text.split(regex).map((part, i) =>
+      regex.test(part) ? <b key={i} style={{color:'#e91e63'}}>{part}</b> : part
+    );
+  }
+
   return (
     <Box className={styles.searchHeroWrap}>
       <Box className={styles.searchHeroContainer}>
@@ -241,7 +249,7 @@ const SearchHero = () => {
                           </Avatar>
                         </ListItemAvatar>
                         <ListItemText
-                          primary={product.tenSp}
+                          primary={highlightKeyword(product.tenSp, query)}
                           secondary={product.gia ? `${Number(product.gia).toLocaleString('vi-VN')}₫` : ''}
                         />
                       </ListItem>

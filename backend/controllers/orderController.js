@@ -500,26 +500,32 @@ exports.delete = async (req, res) => {
 // Lấy đơn hàng theo người dùng với SQL
 exports.getByUser = async (req, res) => {
   try {
-    // Simplified query first - just get orders without complex joins
-    const query = `
-      SELECT o.*
-      FROM donhang o
-      WHERE o.id_NguoiDung = $1
-      ORDER BY o.ngayDatHang DESC
-    `;
-    
-    const orders = await sequelize.query(query, {
-      bind: [req.params.userId],
-      type: QueryTypes.SELECT
-    });
-    
-    // Add basic structure for compatibility with frontend
+    // 1. Lấy danh sách đơn hàng của user
+    const orders = await sequelize.query(
+      `SELECT * FROM donhang WHERE id_NguoiDung = ? ORDER BY ngayDatHang DESC`,
+      { replacements: [req.params.userId], type: QueryTypes.SELECT }
+    );
+    if (!orders || orders.length === 0) {
+      return res.json([]);
+    }
+    // 2. Lấy tất cả chi tiết đơn hàng cho các đơn hàng này (join sản phẩm)
+    const orderIds = orders.map(o => o.id_DonHang);
+    let details = [];
+    if (orderIds.length > 0) {
+      details = await sequelize.query(
+        `SELECT od.*, p.tenSp, p.hinhAnh, p.gia as giaSanPham
+         FROM chitietdonhang od
+         LEFT JOIN sanpham p ON od.id_SanPham = p.id_SanPham
+         WHERE od.id_DonHang IN (${orderIds.map(() => '?').join(',')})
+         ORDER BY od.id_DonHang, od.id_ChiTietDH`,
+        { replacements: orderIds, type: QueryTypes.SELECT }
+      );
+    }
+    // 3. Gán OrderDetails cho từng đơn hàng (luôn là mảng, không undefined)
     const ordersWithDetails = orders.map(order => ({
       ...order,
-      itemCount: 0,
-      OrderDetails: []
+      OrderDetails: Array.isArray(details) ? details.filter(d => d.id_DonHang === order.id_DonHang) : []
     }));
-    
     res.json(ordersWithDetails);
   } catch (error) {
     console.error('getByUser error:', error);
